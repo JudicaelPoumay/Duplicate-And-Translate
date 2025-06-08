@@ -44,6 +44,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div id="progress-log" class="progress-log"></div>
 		<div id="block-progress-info" class="block-progress"></div>
 		<div id="final-link"></div>
+		<div id="donation-button">
+			<?php require PLUGIN_DIR . 'progress-page-view/donation-button.php'; ?>
+		</div>
 	</div>
 
 	<?php wp_print_scripts('dt-progress-page-script'); ?>
