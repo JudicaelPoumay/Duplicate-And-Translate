@@ -41,7 +41,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div id="progress-container" style="display:none;">
-		<div id="progress-log" class="progress-log"></div>
+        <?php 
+        $debug_mode = get_option( 'dt_debug_mode' );
+        $style = ( $debug_mode === 'on' ) ? '' : 'style="display:none;"';
+        ?>
+		<div id="progress-log" class="progress-log" <?php echo $style; ?>></div>
 		<div id="block-progress-info" class="block-progress"></div>
 		<div id="final-link"></div>
 		<div id="donation-button">
@@ -49,9 +53,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 		<div style="margin-top: 1em;">
 			<h3>Contact :</h3>
-			<a href="https://www.linkedin.com/in/judicael-poumay/" target="_blank" rel="noopener noreferrer">My LinkedIn</a> |
-			<a href="https://thethoughtprocess.xyz/" target="_blank" rel="noopener noreferrer">My Website</a> |
-			<a href="mailto:pro.judicael.poumay@gmail.com">My Email</a>
+			<a href="https://www.linkedin.com/in/judicael-poumay/" target="_blank" rel="noopener noreferrer"><?php _e('My LinkedIn', 'duplicate-translate'); ?></a> |
+			<a href="https://thethoughtprocess.xyz/" target="_blank" rel="noopener noreferrer"><?php _e('My Website', 'duplicate-translate'); ?></a> |
+			<a href="mailto:pro.judicael.poumay@gmail.com"><?php _e('My Email', 'duplicate-translate'); ?></a>
 		</div>
 	</div>
 

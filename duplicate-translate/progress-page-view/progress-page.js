@@ -168,7 +168,7 @@ jQuery(document).ready(function($) {
 				if (response.success) {
 					addProgress(i18n.complete, 'success');
 					if(response.data.edit_link) {
-						finalLink.html('<p class="done"><a href="' + response.data.edit_link + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
+						finalLink.prepend('<p class="done"><a href="' + response.data.edit_link + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
 					}
 					addProgress(i18n.canClose);
 				} else {

@@ -32,7 +32,7 @@ function dt_progress_page_assets() {
         'ajaxurl' => admin_url('admin-ajax.php'),
         'ajaxnonce' => wp_create_nonce('ajax_nonce'),
         'originalPostId' => isset($_GET['post_id']) ? intval($_GET['post_id']) : 0,
-        'parallelBatchSize' => 10,
+        'parallelBatchSize' => 6,
         'i18n' => [
             'selectLanguage' => __('Please select a target language.', 'duplicate-translate'),
             'initiatingJob' => __('Initiating translation job...', 'duplicate-translate'),
@@ -41,7 +41,7 @@ function dt_progress_page_assets() {
             'blocks' => __('blocks', 'duplicate-translate'),
             'finalizingPost' => __('All blocks processed. Finalizing post...', 'duplicate-translate'),
             'complete' => __('Translation process complete!', 'duplicate-translate'),
-            'editPost' => __('Edit Translated Post', 'duplicate-translate'),
+            'editPost' => __('See Translated Post', 'duplicate-translate'),
             'canClose' => __('You can now close this tab.', 'duplicate-translate'),
             'blocksTranslated' => __('Translated %d1 of %d2 blocks.', 'duplicate-translate'),
             'activeAPI' => __('Active API calls: %d', 'duplicate-translate'),

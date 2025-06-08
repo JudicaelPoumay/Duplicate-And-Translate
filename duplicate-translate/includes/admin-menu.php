@@ -24,6 +24,7 @@ function settings_init() {
     register_setting( 'options_group', 'deepseek_model', ['default' => 'deepseek-chat'] );
     register_setting( 'options_group', 'custom_model' );
     register_setting( 'options_group', 'target_language', ['default' => 'French'] );
+    register_setting( 'options_group', 'dt_debug_mode' );
 
     add_settings_section('settings_section', __('API Configuration', 'duplicate-translate'), null, 'options_group');
     
@@ -31,24 +32,25 @@ function settings_init() {
     add_settings_field('api_key_fields', __('API Keys', 'duplicate-translate'), 'api_key_fields_html', 'options_group', 'settings_section');
     add_settings_field('model_selection_field', __('Select Model', 'duplicate-translate'), 'model_selection_field_html', 'options_group', 'settings_section');
     add_settings_field('target_language_field', __('Target Language', 'duplicate-translate'), 'target_language_field_html', 'options_group', 'settings_section');
+    add_settings_field('debug_mode_field', __('Developer Mode', 'duplicate-translate'), 'debug_mode_field_html', 'options_group', 'settings_section');
 }
 
 function api_key_fields_html() {
     ?>
     <div id="openai-key-div">
-        <label for="openai_api_key">OpenAI API Key</label><br>
+        <label for="openai_api_key"><?php _e('OpenAI API Key', 'duplicate-translate'); ?></label><br>
         <input type="text" id="openai_api_key" name="openai_api_key" value="<?php echo esc_attr( get_option( 'openai_api_key' ) ); ?>" size="50" />
     </div>
     <div id="gemini-key-div" style="display:none;">
-        <label for="gemini_api_key">Gemini API Key</label><br>
+        <label for="gemini_api_key"><?php _e('Gemini API Key', 'duplicate-translate'); ?></label><br>
         <input type="text" id="gemini_api_key" name="gemini_api_key" value="<?php echo esc_attr( get_option( 'gemini_api_key' ) ); ?>" size="50" />
     </div>
     <div id="claude-key-div" style="display:none;">
-        <label for="claude_api_key">Claude API Key</label><br>
+        <label for="claude_api_key"><?php _e('Claude API Key', 'duplicate-translate'); ?></label><br>
         <input type="text" id="claude_api_key" name="claude_api_key" value="<?php echo esc_attr( get_option( 'claude_api_key' ) ); ?>" size="50" />
     </div>
     <div id="deepseek-key-div" style="display:none;">
-        <label for="deepseek_api_key">DeepSeek API Key</label><br>
+        <label for="deepseek_api_key"><?php _e('DeepSeek API Key', 'duplicate-translate'); ?></label><br>
         <input type="text" id="deepseek_api_key" name="deepseek_api_key" value="<?php echo esc_attr( get_option( 'deepseek_api_key' ) ); ?>" size="50" />
     </div>
     <?php
@@ -92,13 +94,13 @@ function model_selection_field_html() {
         <label><input type="radio" name="deepseek_model" value="deepseek-reasoner" <?php checked($deepseek_model, 'deepseek-reasoner'); ?>> deepseek-reasoner</label><br>
     </div>
     <div id="custom-model-div" style="margin-top: 10px;">
-        <label for="custom_model">Custom Model</label><br>
-        <input type="text" id="custom_model" name="custom_model" value="<?php echo esc_attr($custom_model); ?>" size="40" placeholder="Specify a custom model name" />
-        <p class="description">If you fill this, it will override the selection above for the chosen provider. </p>
-        <p class="description">Beware : some models maybe slower than others, we do not recommend thinking models for translation tasks. </p>
+        <label for="custom_model"><?php _e('Custom Model', 'duplicate-translate'); ?></label><br>
+        <input type="text" id="custom_model" name="custom_model" value="<?php echo esc_attr($custom_model); ?>" size="40" placeholder="<?php _e('Specify a custom model name', 'duplicate-translate'); ?>" />
+        <p class="description"><?php _e('If you fill this, it will override the selection above for the chosen provider.', 'duplicate-translate'); ?></p>
+        <p class="description"><?php _e('Beware : some models maybe slower than others, we do not recommend thinking models for translation tasks.', 'duplicate-translate'); ?></p>
     </div>
     <div id="chosen-model-container" style="margin-top: 1em;">
-        <b>You have chosen model: <span id="chosen-model-text"></span></b>
+        <b><?php _e('You have chosen model:', 'duplicate-translate'); ?> <span id="chosen-model-text"></span></b>
     </div>
     <?php
 }
@@ -114,22 +116,35 @@ function target_language_field_html() {
     echo '<p class="description">' . __('Select the language to translate content into.', 'duplicate-translate') . '</p>';
 }
 
+function debug_mode_field_html() {
+    $debug_mode = get_option( 'dt_debug_mode', 'off' );
+    ?>
+    <label>
+        <input type="checkbox" name="dt_debug_mode" value="on" <?php checked( $debug_mode, 'on' ); ?> />
+        <?php _e( 'Enable Developer Mode', 'duplicate-translate' ); ?>
+    </label>
+    <p class="description">
+        <?php _e( 'This is for developer mode only. Some errors may appear but may not be indicative of bugs.', 'duplicate-translate' ); ?>
+    </p>
+    <?php
+}
+
 function options_page_html() {
     if (!current_user_can('manage_options')) return;
     ?>
     <div class="wrap">
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
         <form action="options.php" method="post">
-            <?php settings_fields('options_group'); do_settings_sections('options_group'); submit_button('Save Settings'); ?>
+            <?php settings_fields('options_group'); do_settings_sections('options_group'); submit_button(__('Save Settings', 'duplicate-translate')); ?>
         </form>
 		<div id="donation-button">
 			<?php require PLUGIN_DIR . 'progress-page-view/donation-button.php'; ?>
 		</div>
 		<div style="margin-top: 1em;">
 			<h3>Contact :</h3>
-			<a href="https://www.linkedin.com/in/judicael-poumay/" target="_blank" rel="noopener noreferrer">My LinkedIn</a> |
-			<a href="https://thethoughtprocess.xyz/" target="_blank" rel="noopener noreferrer">My Website</a> |
-			<a href="mailto:pro.judicael.poumay@gmail.com">My Email</a>
+			<a href="https://www.linkedin.com/in/judicael-poumay/" target="_blank" rel="noopener noreferrer"><?php _e('My LinkedIn', 'duplicate-translate'); ?></a> |
+			<a href="https://thethoughtprocess.xyz/" target="_blank" rel="noopener noreferrer"><?php _e('My Website', 'duplicate-translate'); ?></a> |
+			<a href="mailto:pro.judicael.poumay@gmail.com"><?php _e('My Email', 'duplicate-translate'); ?></a>
 		</div>
     </div>
     <script>

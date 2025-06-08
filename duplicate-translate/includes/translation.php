@@ -115,7 +115,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
     }
 
     $max_attempts = 4;
-    $delay = 1;
+    $delay = 2;
     $last_error = null;
     for ($attempt = 1; $attempt <= $max_attempts; $attempt++) {
         $response = wp_remote_post( $api_url, ['method'  => 'POST', 'headers' => $headers, 'body' => json_encode( $body ), 'timeout' => 60] );
@@ -154,7 +154,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
         }
         if ($attempt < $max_attempts) {
             sleep($delay);
-            $delay *= 2;
+            $delay *= 3;
         }
     }
     return $last_error;
