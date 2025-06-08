@@ -1,15 +1,4 @@
-<?php
-
-if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Exit if accessed directly.
-}
-
-?>
-<script type="text/javascript">
-var ajaxurl = '<?php echo esc_url( admin_url('admin-ajax.php') ); ?>';
-var ajaxnonce = '<?php echo esc_js( wp_create_nonce('ajax_nonce') ); ?>'; // General nonce for our AJAX actions
-var originalPostId = <?php echo intval( $_GET['post_id'] ); ?>;
-var parallelBatchSize = 10; // How many blocks to translate concurrently
+const { ajaxurl, ajaxnonce, originalPostId, i18n, parallelBatchSize } = progressPageData;
 
 jQuery(document).ready(function($) {
 	var progressLog = $('#progress-log');
@@ -36,7 +25,7 @@ jQuery(document).ready(function($) {
 	}
 
 	function updateBlockProgress() {
-		blockProgressInfo.text('Translated ' + processedBlockCount + ' of ' + totalBlocks + ' blocks. Active API calls: ' + activeRequests);
+		blockProgressInfo.text(i18n.blocksTranslated.replace('%d1', processedBlockCount).replace('%d2', totalBlocks) + ' ' + i18n.activeAPI.replace('%d', activeRequests));
 	}
 
 	// Handle form submission
@@ -46,7 +35,7 @@ jQuery(document).ready(function($) {
 		var translationContext = $('#translation-context').val();
 		
 		if (!targetLanguage) {
-			alert('<?php _e("Please select a target language.", "duplicate-translate"); ?>');
+			alert(i18n.selectLanguage);
 			return;
 		}
 
@@ -61,7 +50,7 @@ jQuery(document).ready(function($) {
 
 	// 1. Initiate Job
 	function initiateTranslationJob(targetLanguage, translationContext) {
-		addProgress('<?php _e("Initiating translation job...", "duplicate-translate"); ?>');
+		addProgress(i18n.initiatingJob);
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
@@ -81,10 +70,10 @@ jQuery(document).ready(function($) {
 
 					addProgress(response.data.message, 'success');
 					if (totalBlocks === 0) {
-						addProgress('<?php _e("No content blocks found to translate. Finalizing...", "duplicate-translate"); ?>');
+						addProgress(i18n.noBlocks);
 						finalizeJob();
 					} else {
-						addProgress('<?php _e("Starting block translations...", "duplicate-translate"); ?> (' + totalBlocks + ' blocks)');
+						addProgress(i18n.startingBlockTranslations + ' (' + totalBlocks + ' ' + i18n.blocks + ')');
 						processBlockQueue();
 					}
 				} else {
@@ -117,33 +106,27 @@ jQuery(document).ready(function($) {
 				updateBlockProgress();
 			}
 		}
-		 // If all blocks are processed or in_progress but no active requests (e.g. initial run didn't fill batch), and not all done, this might indicate an issue.
-		// However, the main check is `processedBlockCount === totalBlocks`.
 	}
 
 	// 3. Translate Single Block
 	function translateSingleBlock(blockMetaIndex, blockMeta) {
-		// The blockMeta here could contain the actual block data or just an identifier if server fetches it
-		// For this example, let's assume blockMeta.raw_block is passed from `initiate_job`
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
 				action: 'process_block_translation',
 				job_id: jobId,
 				block_meta_index: blockMetaIndex,
-				target_language: targetLanguage,
-				translation_context: translationContext,
 				_ajax_nonce: ajaxnonce
 			},
 			success: function(response) {
 				activeRequests--;
 				processedBlockCount++;
 				if (response.success) {
-					addProgress('Block ' + (blockMetaIndex + 1) + ' translated.', 'success');
+					addProgress(i18n.blockTranslated.replace('%d', blockMetaIndex + 1), 'success');
 					translatedBlocksData[blockMetaIndex] = response.data.translated_block_content; // Store serialized block
 					blocksToTranslateMeta[blockMetaIndex].status = 'done';
 				} else {
-					addProgress('Error translating block ' + (blockMetaIndex + 1) + ': ' + (response.data.message || 'Unknown error'), 'error');
+					addProgress(i18n.errorTranslatingBlock.replace('%d', blockMetaIndex + 1) + (response.data.message || 'Unknown error'), 'error');
 					// Store original block content on error to prevent data loss
 					translatedBlocksData[blockMetaIndex] = response.data.original_block_content; // Server should send this
 					blocksToTranslateMeta[blockMetaIndex].status = 'failed';
@@ -153,7 +136,7 @@ jQuery(document).ready(function($) {
 			error: function(jqXHR, ts, et) {
 				activeRequests--;
 				processedBlockCount++; // Count as processed even on error to move on
-				addProgress('AJAX Error translating block ' + (blockMetaIndex + 1) + ': ' + ts + ' - ' + et, 'error');
+				addProgress(i18n.ajaxErrorTranslatingBlock.replace('%d', blockMetaIndex + 1) + ts + ' - ' + et, 'error');
 				blocksToTranslateMeta[blockMetaIndex].status = 'failed_ajax';
 				processBlockQueue();
 			}
@@ -164,14 +147,12 @@ jQuery(document).ready(function($) {
 	function finalizeJob() {
 		spinner.show();
 		updateBlockProgress(); // Final update
-		addProgress('<?php _e("All blocks processed. Finalizing post...", "duplicate-translate"); ?>');
+		addProgress(i18n.finalizingPost);
 
-		// Filter out any undefined slots if some blocks failed catastrophically (should ideally not happen if server sends original on error)
 		var finalBlockArray = translatedBlocksData.filter(function (el) { return el != null; });
 		if (finalBlockArray.length !== totalBlocks && totalBlocks > 0) {
-			 addProgress('Warning: Some blocks might be missing due to critical errors. Proceeding with available blocks.', 'error');
+			 addProgress(i18n.missingBlocksWarning, 'error');
 		}
-
 
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
@@ -185,11 +166,11 @@ jQuery(document).ready(function($) {
 			success: function(response) {
 				spinner.hide();
 				if (response.success) {
-					addProgress('<?php _e("Translation process complete!", "duplicate-translate"); ?>', 'success');
+					addProgress(i18n.complete, 'success');
 					if(response.data.edit_link) {
-						finalLink.html('<p class="done"><a href="' + response.data.edit_link + '" target="_blank"><?php _e("Edit Translated Post", "duplicate-translate"); ?> (ID: ' + newPostId + ')</a></p>');
+						finalLink.html('<p class="done"><a href="' + response.data.edit_link + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
 					}
-					addProgress('<?php _e("You can now close this tab.", "duplicate-translate"); ?>');
+					addProgress(i18n.canClose);
 				} else {
 					addProgress('Error finalizing job: ' + (response.data.message || 'Unknown error'), 'error');
 				}
@@ -200,6 +181,4 @@ jQuery(document).ready(function($) {
 			}
 		});
 	}
-
-});
-</script>
+}); 

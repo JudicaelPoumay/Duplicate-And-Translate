@@ -7,12 +7,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // 1. Action to Render the Initial Progress Page (with JavaScript)
 add_action( 'admin_action_render_progress_page', 'render_progress_page_callback' );
+
+// Enqueue scripts and styles for the progress page
+function dt_progress_page_assets() {
+    // Enqueue Style
+    wp_enqueue_style(
+        'dt-progress-page-style',
+        plugins_url('../progress-page-view/progress-page.css', __FILE__),
+        [],
+        '1.0.0'
+    );
+
+    // Enqueue Script
+    wp_enqueue_script(
+        'dt-progress-page-script',
+        plugins_url('../progress-page-view/progress-page.js', __FILE__),
+        ['jquery'],
+        '1.0.0',
+        true
+    );
+
+    // Localize Script
+    $translation_array = [
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'ajaxnonce' => wp_create_nonce('ajax_nonce'),
+        'originalPostId' => isset($_GET['post_id']) ? intval($_GET['post_id']) : 0,
+        'parallelBatchSize' => 10,
+        'i18n' => [
+            'selectLanguage' => __('Please select a target language.', 'duplicate-translate'),
+            'initiatingJob' => __('Initiating translation job...', 'duplicate-translate'),
+            'noBlocks' => __('No content blocks found to translate. Finalizing...', 'duplicate-translate'),
+            'startingBlockTranslations' => __('Starting block translations...', 'duplicate-translate'),
+            'blocks' => __('blocks', 'duplicate-translate'),
+            'finalizingPost' => __('All blocks processed. Finalizing post...', 'duplicate-translate'),
+            'complete' => __('Translation process complete!', 'duplicate-translate'),
+            'editPost' => __('Edit Translated Post', 'duplicate-translate'),
+            'canClose' => __('You can now close this tab.', 'duplicate-translate'),
+            'blocksTranslated' => __('Translated %d1 of %d2 blocks.', 'duplicate-translate'),
+            'activeAPI' => __('Active API calls: %d', 'duplicate-translate'),
+            'blockTranslated' => __('Block %d translated.', 'duplicate-translate'),
+            'errorTranslatingBlock' => __('Error translating block %d: ', 'duplicate-translate'),
+            'ajaxErrorTranslatingBlock' => __('AJAX Error translating block %d: ', 'duplicate-translate'),
+            'missingBlocksWarning' => __('Warning: Some blocks might be missing due to critical errors. Proceeding with available blocks.', 'duplicate-translate')
+        ]
+    ];
+    wp_localize_script('dt-progress-page-script', 'progressPageData', $translation_array);
+}
+
 function render_progress_page_callback() {
     if ( ! isset( $_GET['post_id'], $_GET['_wpnonce'] ) ||
          ! wp_verify_nonce( $_GET['_wpnonce'], 'render_progress_page_nonce_' . $_GET['post_id'] ) ||
          ! current_user_can( 'edit_posts' ) ) {
         wp_die( 'Security check failed or insufficient permissions.' );
     }
+
+    dt_progress_page_assets();
 
 	$api_key = get_option( 'openai_api_key' );
 	$target_language = get_option( 'target_language' );
@@ -171,7 +220,7 @@ function finalize_job_callback() {
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
     $new_post_id = isset( $_POST['new_post_id'] ) ? intval( $_POST['new_post_id'] ) : 0;
     $translated_blocks_serialized = isset( $_POST['translated_blocks_serialized'] ) && is_array($_POST['translated_blocks_serialized'])
-                                    ? $_POST['translated_blocks_serialized']
+                                    ? wp_unslash( $_POST['translated_blocks_serialized'] ) // wp_unslash for data from POST
                                     : [];
 
     if ( ! $job_id || ! $new_post_id ) {
@@ -181,11 +230,11 @@ function finalize_job_callback() {
     // Basic validation of serialized blocks
     $final_content_parts = [];
     foreach ($translated_blocks_serialized as $serialized_block_string) {
-        if (is_string($serialized_block_string) && strpos(trim($serialized_block_string), '<!-- wp:') === 0) {
+        if (is_string($serialized_block_string) && !empty($serialized_block_string)) {
             $final_content_parts[] = $serialized_block_string;
         } else {
             // Log problematic block string
-            error_log("Duplicate & Translate : Finalize: Invalid serialized block string received for job $job_id: " . substr($serialized_block_string,0,100));
+            error_log("Duplicate & Translate : Finalize: Invalid serialized block string received for job $job_id: " . substr(print_r($serialized_block_string, true),0,100));
         }
     }
     $final_content = implode( "\n\n", $final_content_parts );
