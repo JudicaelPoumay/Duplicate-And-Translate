@@ -1,98 +1,93 @@
 <?php
 /**
- * Plugin Name: OpenAI Duplicate & Translate (Batch AJAX)
- * Description: Adds a button to duplicate posts and translate their content using OpenAI API, with batched AJAX progress.
- * Version: 1.3
- * Author: Your Name
+ * Plugin Name: Duplicate & Translate
+ * Description: ...
+ * Version: 0.2
+ * Author: Judicael Poumay
  * License: GPLv2 or later
- * Text Domain: openai-duplicate-translate
+ * Text Domain: duplicate-translate
  */
-
-// ... (DEFINES, SETTINGS FUNCTIONS, BUTTON/LINK FUNCTIONS - remain largely the same as v1.2) ...
-// Make sure button/link functions now point to `odt_render_progress_page`
-// e.g., in odt_add_duplicate_translate_button_on_edit_screen and odt_add_duplicate_translate_row_action:
-// $url = admin_url( 'admin.php?action=odt_render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'odt_render_progress_page_nonce_' . $post->ID ) );
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'ODT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'ODT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // --- SETTINGS (Unchanged from previous version) ---
-add_action( 'admin_menu', 'odt_add_admin_menu' );
-add_action( 'admin_init', 'odt_settings_init' );
+add_action( 'admin_menu', 'add_admin_menu' );
+add_action( 'admin_init', 'settings_init' );
 
-function odt_add_admin_menu() {
-    add_options_page('OpenAI Duplicate & Translate', 'OpenAI D&T', 'manage_options', 'openai_duplicate_translate', 'odt_options_page_html');
+function add_admin_menu() {
+    add_options_page('Duplicate & Translate', 'Duplicate & Translate', 'manage_options', 'duplicate_translate', 'options_page_html');
 }
-function odt_settings_init() {
-    register_setting( 'odt_options_group', 'odt_openai_api_key' );
-    register_setting( 'odt_options_group', 'odt_target_language', ['default' => 'Spanish'] );
-    add_settings_section('odt_settings_section', __('API Configuration', 'openai-duplicate-translate'), null, 'odt_options_group');
-    add_settings_field('odt_openai_api_key_field', __('OpenAI API Key', 'openai-duplicate-translate'), 'odt_api_key_field_html', 'odt_options_group', 'odt_settings_section');
-    add_settings_field('odt_target_language_field', __('Target Language', 'openai-duplicate-translate'), 'odt_target_language_field_html', 'odt_options_group', 'odt_settings_section');
+function settings_init() {
+    register_setting( 'options_group', 'openai_api_key' );
+    register_setting( 'options_group', 'target_language', ['default' => 'Spanish'] );
+    add_settings_section('settings_section', __('API Configuration', 'duplicate-translate'), null, 'options_group');
+    add_settings_field('openai_api_key_field', __('OpenAI API Key', 'duplicate-translate'), 'api_key_field_html', 'options_group', 'settings_section');
+    add_settings_field('target_language_field', __('Target Language', 'duplicate-translate'), 'target_language_field_html', 'options_group', 'settings_section');
 }
-function odt_api_key_field_html() {
-    $api_key = get_option( 'odt_openai_api_key' );
-    echo '<input type="text" name="odt_openai_api_key" value="' . esc_attr( $api_key ) . '" size="50" />';
-    echo '<p class="description">' . __('Enter your OpenAI API key.', 'openai-duplicate-translate') . '</p>';
+function api_key_field_html() {
+    $api_key = get_option( 'openai_api_key' );
+    echo '<input type="text" name="openai_api_key" value="' . esc_attr( $api_key ) . '" size="50" />';
+    echo '<p class="description">' . __('Enter your OpenAI API key.', 'duplicate-translate') . '</p>';
 }
-function odt_target_language_field_html() {
-    $target_language = get_option( 'odt_target_language', 'Spanish' );
+function target_language_field_html() {
+    $target_language = get_option( 'target_language', 'Spanish' );
     $languages = ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Japanese', 'Chinese (Simplified)'];
-    echo '<select name="odt_target_language">';
+    echo '<select name="target_language">';
     foreach ($languages as $lang) {
         echo '<option value="' . esc_attr($lang) . '" ' . selected($target_language, $lang, false) . '>' . esc_html($lang) . '</option>';
     }
     echo '</select>';
-    echo '<p class="description">' . __('Select the language to translate content into.', 'openai-duplicate-translate') . '</p>';
+    echo '<p class="description">' . __('Select the language to translate content into.', 'duplicate-translate') . '</p>';
 }
-function odt_options_page_html() {
+function options_page_html() {
     if (!current_user_can('manage_options')) return;
     ?>
     <div class="wrap">
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
         <form action="options.php" method="post">
-            <?php settings_fields('odt_options_group'); do_settings_sections('odt_options_group'); submit_button('Save Settings'); ?>
+            <?php settings_fields('options_group'); do_settings_sections('options_group'); submit_button('Save Settings'); ?>
         </form>
     </div>
     <?php
 }
 
 // --- BUTTONS / LINKS ---
-add_action( 'post_submitbox_misc_actions', 'odt_add_duplicate_translate_button_on_edit_screen' );
-add_filter( 'post_row_actions', 'odt_add_duplicate_translate_row_action', 10, 2 );
+add_action( 'post_submitbox_misc_actions', 'add_duplicate_translate_button_on_edit_screen' );
+add_filter( 'post_row_actions', 'add_duplicate_translate_row_action', 10, 2 );
 
-function odt_add_duplicate_translate_button_on_edit_screen( $post ) {
+function add_duplicate_translate_button_on_edit_screen( $post ) {
     if ( $post->post_type !== 'post' || $post->post_status !== 'publish' ) return;
-    $api_key = get_option( 'odt_openai_api_key' );
-    $target_language = get_option( 'odt_target_language' );
+    $api_key = get_option( 'openai_api_key' );
+    $target_language = get_option( 'target_language' );
     if ( empty( $api_key ) || empty( $target_language ) ) {
-        echo '<div id="duplicate-translate-action" class="misc-pub-section"><p style="color:red;">' . __('Please configure OpenAI API Key and Target Language in settings.', 'openai-duplicate-translate') . '</p></div>';
+        echo '<div id="duplicate-translate-action" class="misc-pub-section"><p style="color:red;">' . __('Please configure OpenAI API Key and Target Language in settings.', 'duplicate-translate') . '</p></div>';
         return;
     }
-    $url = admin_url( 'admin.php?action=odt_render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'odt_render_progress_page_nonce_' . $post->ID ) );
+    $url = admin_url( 'admin.php?action=render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'render_progress_page_nonce_' . $post->ID ) );
     ?>
     <div id="duplicate-translate-action" class="misc-pub-section">
-        <a href="<?php echo esc_url( $url ); ?>" target="_blank" class="button button-primary"><?php esc_html_e( 'Duplicate & Translate', 'openai-duplicate-translate' ); ?></a>
-        <p class="description"><?php printf(esc_html__('Translates to %s. Opens in a new tab.', 'openai-duplicate-translate'), '<strong>' . esc_html($target_language) . '</strong>'); ?></p>
+        <a href="<?php echo esc_url( $url ); ?>" target="_blank" class="button button-primary"><?php esc_html_e( 'Duplicate & Translate', 'duplicate-translate' ); ?></a>
+        <p class="description"><?php printf(esc_html__('Translates to %s. Opens in a new tab.', 'duplicate-translate'), '<strong>' . esc_html($target_language) . '</strong>'); ?></p>
     </div>
     <?php
 }
 
-function odt_add_duplicate_translate_row_action( $actions, $post ) {
+function add_duplicate_translate_row_action( $actions, $post ) {
     if ( $post->post_type === 'post' && $post->post_status === 'publish' ) {
-        $api_key = get_option( 'odt_openai_api_key' );
-        $target_language = get_option( 'odt_target_language' );
+        $api_key = get_option( 'openai_api_key' );
+        $target_language = get_option( 'target_language' );
         if ( empty( $api_key ) || empty( $target_language ) ) return $actions;
-        $url = admin_url( 'admin.php?action=odt_render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'odt_render_progress_page_nonce_' . $post->ID ) );
+        $url = admin_url( 'admin.php?action=render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'render_progress_page_nonce_' . $post->ID ) );
         $actions['duplicate_translate'] = sprintf(
             '<a href="%s" target="_blank" aria-label="%s">%s</a>',
             esc_url( $url ),
-            esc_attr( sprintf( __( 'Duplicate & Translate "%s"', 'openai-duplicate-translate' ), get_the_title( $post->ID ) ) ),
-            __( 'Duplicate & Translate', 'openai-duplicate-translate' )
+            esc_attr( sprintf( __( 'Duplicate & Translate "%s"', 'duplicate-translate' ), get_the_title( $post->ID ) ) ),
+            __( 'Duplicate & Translate', 'duplicate-translate' )
         );
     }
     return $actions;
@@ -100,10 +95,10 @@ function odt_add_duplicate_translate_row_action( $actions, $post ) {
 
 
 // 1. Action to Render the Initial Progress Page (with JavaScript)
-add_action( 'admin_action_odt_render_progress_page', 'odt_render_progress_page_callback' );
-function odt_render_progress_page_callback() {
+add_action( 'admin_action_render_progress_page', 'render_progress_page_callback' );
+function render_progress_page_callback() {
     if ( ! isset( $_GET['post_id'], $_GET['_wpnonce'] ) ||
-         ! wp_verify_nonce( $_GET['_wpnonce'], 'odt_render_progress_page_nonce_' . $_GET['post_id'] ) ||
+         ! wp_verify_nonce( $_GET['_wpnonce'], 'render_progress_page_nonce_' . $_GET['post_id'] ) ||
          ! current_user_can( 'edit_posts' ) ) {
         wp_die( 'Security check failed or insufficient permissions.' );
     }
@@ -116,7 +111,7 @@ function odt_render_progress_page_callback() {
     <head>
         <meta charset="<?php bloginfo( 'charset' ); ?>">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?php _e('Translation Progress', 'openai-duplicate-translate'); ?></title>
+        <title><?php _e('Translation Progress', 'duplicate-translate'); ?></title>
         <style>
             /* ... (same styles as before) ... */
             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; background-color: #f9f9f9; color: #333; }
@@ -135,16 +130,16 @@ function odt_render_progress_page_callback() {
         <?php wp_print_scripts('jquery'); ?>
     </head>
     <body>
-        <h1><?php _e('Translation Progress', 'openai-duplicate-translate'); ?> <span id="spinner" class="spinner" style="display:none;"></span></h1>
+        <h1><?php _e('Translation Progress', 'duplicate-translate'); ?> <span id="spinner" class="spinner" style="display:none;"></span></h1>
         <div id="progress-log" class="progress-log"></div>
         <div id="block-progress-info" class="block-progress"></div>
         <div id="final-link"></div>
 
         <script type="text/javascript">
             var ajaxurl = '<?php echo esc_url( admin_url('admin-ajax.php') ); ?>';
-            var odtNonce = '<?php echo esc_js( wp_create_nonce('odt_ajax_nonce') ); ?>'; // General nonce for our AJAX actions
+            var ajaxnonce = '<?php echo esc_js( wp_create_nonce('ajax_nonce') ); ?>'; // General nonce for our AJAX actions
             var originalPostId = <?php echo intval( $original_post_id ); ?>;
-            var parallelBatchSize = 5; // How many blocks to translate concurrently
+            var parallelBatchSize = 10; // How many blocks to translate concurrently
 
             jQuery(document).ready(function($) {
                 var progressLog = $('#progress-log');
@@ -175,13 +170,13 @@ function odt_render_progress_page_callback() {
                 // 1. Initiate Job
                 function initiateTranslationJob() {
                     spinner.show();
-                    addProgress('<?php _e("Initiating translation job...", "openai-duplicate-translate"); ?>');
+                    addProgress('<?php _e("Initiating translation job...", "duplicate-translate"); ?>');
                     $.ajax({
                         url: ajaxurl, type: 'POST', dataType: 'json',
                         data: {
-                            action: 'odt_initiate_job',
+                            action: 'initiate_job',
                             original_post_id: originalPostId,
-                            _ajax_nonce: odtNonce
+                            _ajax_nonce: ajaxnonce
                         },
                         success: function(response) {
                             if (response.success) {
@@ -193,10 +188,10 @@ function odt_render_progress_page_callback() {
 
                                 addProgress(response.data.message, 'success');
                                 if (totalBlocks === 0) {
-                                    addProgress('<?php _e("No content blocks found to translate. Finalizing...", "openai-duplicate-translate"); ?>');
+                                    addProgress('<?php _e("No content blocks found to translate. Finalizing...", "duplicate-translate"); ?>');
                                     finalizeJob();
                                 } else {
-                                    addProgress('<?php _e("Starting block translations...", "openai-duplicate-translate"); ?> (' + totalBlocks + ' blocks)');
+                                    addProgress('<?php _e("Starting block translations...", "duplicate-translate"); ?> (' + totalBlocks + ' blocks)');
                                     processBlockQueue();
                                 }
                             } else {
@@ -236,15 +231,15 @@ function odt_render_progress_page_callback() {
                 // 3. Translate Single Block
                 function translateSingleBlock(blockMetaIndex, blockMeta) {
                     // The blockMeta here could contain the actual block data or just an identifier if server fetches it
-                    // For this example, let's assume blockMeta.raw_block is passed from `odt_initiate_job`
+                    // For this example, let's assume blockMeta.raw_block is passed from `initiate_job`
                     $.ajax({
                         url: ajaxurl, type: 'POST', dataType: 'json',
                         data: {
-                            action: 'odt_process_block_translation',
+                            action: 'process_block_translation',
                             job_id: jobId,
                             block_meta_index: blockMetaIndex, // Server uses this to fetch the specific block from transient
                              // raw_block_data: blockMeta.raw_block, // Send raw block for translation
-                            _ajax_nonce: odtNonce
+                            _ajax_nonce: ajaxnonce
                         },
                         success: function(response) {
                             activeRequests--;
@@ -275,7 +270,7 @@ function odt_render_progress_page_callback() {
                 function finalizeJob() {
                     spinner.show();
                     updateBlockProgress(); // Final update
-                    addProgress('<?php _e("All blocks processed. Finalizing post...", "openai-duplicate-translate"); ?>');
+                    addProgress('<?php _e("All blocks processed. Finalizing post...", "duplicate-translate"); ?>');
 
                     // Filter out any undefined slots if some blocks failed catastrophically (should ideally not happen if server sends original on error)
                     var finalBlockArray = translatedBlocksData.filter(function (el) { return el != null; });
@@ -287,20 +282,20 @@ function odt_render_progress_page_callback() {
                     $.ajax({
                         url: ajaxurl, type: 'POST', dataType: 'json',
                         data: {
-                            action: 'odt_finalize_job',
+                            action: 'finalize_job',
                             job_id: jobId,
                             new_post_id: newPostId,
                             translated_blocks_serialized: finalBlockArray, // Array of serialized block strings
-                            _ajax_nonce: odtNonce
+                            _ajax_nonce: ajaxnonce
                         },
                         success: function(response) {
                             spinner.hide();
                             if (response.success) {
-                                addProgress('<?php _e("Translation process complete!", "openai-duplicate-translate"); ?>', 'success');
+                                addProgress('<?php _e("Translation process complete!", "duplicate-translate"); ?>', 'success');
                                 if(response.data.edit_link) {
-                                    finalLink.html('<p class="done"><a href="' + response.data.edit_link + '" target="_blank"><?php _e("Edit Translated Post", "openai-duplicate-translate"); ?> (ID: ' + newPostId + ')</a></p>');
+                                    finalLink.html('<p class="done"><a href="' + response.data.edit_link + '" target="_blank"><?php _e("Edit Translated Post", "duplicate-translate"); ?> (ID: ' + newPostId + ')</a></p>');
                                 }
-                                addProgress('<?php _e("You can now close this tab.", "openai-duplicate-translate"); ?>');
+                                addProgress('<?php _e("You can now close this tab.", "duplicate-translate"); ?>');
                             } else {
                                 addProgress('Error finalizing job: ' + (response.data.message || 'Unknown error'), 'error');
                             }
@@ -323,37 +318,37 @@ function odt_render_progress_page_callback() {
 }
 
 // 2. AJAX: Initiate Job, Duplicate, Translate Title, Parse Blocks
-add_action( 'wp_ajax_odt_initiate_job', 'odt_initiate_job_callback' );
-function odt_initiate_job_callback() {
-    check_ajax_referer( 'odt_ajax_nonce', '_ajax_nonce' );
-    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'openai-duplicate-translate')] );
+add_action( 'wp_ajax_initiate_job', 'initiate_job_callback' );
+function initiate_job_callback() {
+    check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
+    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
     $original_post_id = isset( $_POST['original_post_id'] ) ? intval( $_POST['original_post_id'] ) : 0;
-    if ( ! $original_post_id ) wp_send_json_error( ['message' => __('Original Post ID missing.', 'openai-duplicate-translate')] );
+    if ( ! $original_post_id ) wp_send_json_error( ['message' => __('Original Post ID missing.', 'duplicate-translate')] );
 
     $original_post = get_post( $original_post_id );
     if ( ! $original_post || $original_post->post_type !== 'post' || $original_post->post_status !== 'publish' ) {
-        wp_send_json_error( ['message' => __('Invalid original post.', 'openai-duplicate-translate')] );
+        wp_send_json_error( ['message' => __('Invalid original post.', 'duplicate-translate')] );
     }
 
-    $api_key = get_option( 'odt_openai_api_key' );
-    $target_language = get_option( 'odt_target_language', 'Spanish' );
+    $api_key = get_option( 'openai_api_key' );
+    $target_language = get_option( 'target_language', 'Spanish' );
     if ( empty( $api_key ) || empty( $target_language ) ) {
-        wp_send_json_error( ['message' => __('API Key or Target Language not set.', 'openai-duplicate-translate')] );
+        wp_send_json_error( ['message' => __('API Key or Target Language not set.', 'duplicate-translate')] );
     }
 
     try {
         // a. Duplicate Post
-        $new_post_id = odt_duplicate_post( $original_post );
-        if ( is_wp_error( $new_post_id ) ) throw new Exception( __('Error duplicating post: ', 'openai-duplicate-translate') . $new_post_id->get_error_message() );
+        $new_post_id = duplicate_post( $original_post );
+        if ( is_wp_error( $new_post_id ) ) throw new Exception( __('Error duplicating post: ', 'duplicate-translate') . $new_post_id->get_error_message() );
 
         // b. Translate Title
         $translated_title_text = $original_post->post_title . ' (' . $target_language . ')'; // Fallback
-        $translated_title = odt_translate_text_with_openai( $original_post->post_title, $target_language, $api_key, 'post title' );
+        $translated_title = translate_text( $original_post->post_title, $target_language, $api_key, 'post title' );
         if ( ! is_wp_error( $translated_title ) && !empty($translated_title) ) {
             $translated_title_text = $translated_title;
         } else if (is_wp_error($translated_title)) {
-            error_log('ODT Title Translation Error: ' . $translated_title->get_error_message());
+            error_log('Duplicate & Translate : Title Translation Error: ' . $translated_title->get_error_message());
             // Use fallback title
         }
         wp_update_post( ['ID' => $new_post_id, 'post_title' => $translated_title_text, 'post_name' => sanitize_title( $translated_title_text ), 'post_status' => 'draft'] );
@@ -366,7 +361,7 @@ function odt_initiate_job_callback() {
                 $blocks_meta[] = [
                     'original_index' => $index,
                     'block_name'     => $block_item['blockName'] ? $block_item['blockName'] : 'unknown',
-                    'raw_block'      => $block_item, // Client doesn't need this if server fetches, but useful for `odt_process_block_translation`
+                    'raw_block'      => $block_item, // Client doesn't need this if server fetches, but useful for `process_block_translation`
                     'status'         => 'pending' // Client-side status
                 ];
             }
@@ -381,7 +376,7 @@ function odt_initiate_job_callback() {
 
 
         // d. Store Job Data in Transient
-        $job_id = 'odt_job_' . $original_post_id . '_' . time();
+        $job_id = 'job_' . $original_post_id . '_' . time();
         $job_data = [
             'original_post_id' => $original_post_id,
             'new_post_id'      => $new_post_id,
@@ -400,7 +395,7 @@ function odt_initiate_job_callback() {
 
 
         wp_send_json_success([
-            'message'     => sprintf(__('Job initiated. New post ID: %d. Title translated. %d blocks parsed.', 'openai-duplicate-translate'), $new_post_id, count($blocks_meta)),
+            'message'     => sprintf(__('Job initiated. New post ID: %d. Title translated. %d blocks parsed.', 'duplicate-translate'), $new_post_id, count($blocks_meta)),
             'job_id'      => $job_id,
             'new_post_id' => $new_post_id,
             'blocks_meta' => $client_blocks_meta // Meta for client to iterate
@@ -414,21 +409,21 @@ function odt_initiate_job_callback() {
 
 
 // 3. AJAX: Process a Single Block's Translation
-add_action( 'wp_ajax_odt_process_block_translation', 'odt_process_block_translation_callback' );
-function odt_process_block_translation_callback() {
-    check_ajax_referer( 'odt_ajax_nonce', '_ajax_nonce' );
-    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'openai-duplicate-translate')] );
+add_action( 'wp_ajax_process_block_translation', 'process_block_translation_callback' );
+function process_block_translation_callback() {
+    check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
+    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
     $block_meta_index = isset( $_POST['block_meta_index'] ) ? intval( $_POST['block_meta_index'] ) : -1;
 
     if ( ! $job_id || $block_meta_index < 0 ) {
-        wp_send_json_error( ['message' => __('Job ID or Block Index missing.', 'openai-duplicate-translate')] );
+        wp_send_json_error( ['message' => __('Job ID or Block Index missing.', 'duplicate-translate')] );
     }
 
     $job_data = get_transient( $job_id );
     if ( false === $job_data || !isset($job_data['blocks_meta_full'][$block_meta_index]) ) {
-        wp_send_json_error( ['message' => __('Job data or specific block not found or expired.', 'openai-duplicate-translate')] );
+        wp_send_json_error( ['message' => __('Job data or specific block not found or expired.', 'duplicate-translate')] );
     }
 
     $block_to_translate_raw = $job_data['blocks_meta_full'][$block_meta_index]['raw_block'];
@@ -436,10 +431,10 @@ function odt_process_block_translation_callback() {
     $api_key = $job_data['api_key'];
 
     // Use the recursive translator (modified to not echo, just return block or WP_Error)
-    $translated_block_array = odt_translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, $api_key );
+    $translated_block_array = translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, $api_key );
 
     if ( is_wp_error( $translated_block_array ) ) {
-        error_log('ODT Block Translation Error (Job: '.$job_id.', Block Index: '.$block_meta_index.'): ' . $translated_block_array->get_error_message());
+        error_log('Duplicate & Translate : Block Translation Error (Job: '.$job_id.', Block Index: '.$block_meta_index.'): ' . $translated_block_array->get_error_message());
         wp_send_json_error( [
             'message' => $translated_block_array->get_error_message(),
             'block_name' => $block_to_translate_raw['blockName'] ?: 'unknown',
@@ -457,10 +452,10 @@ function odt_process_block_translation_callback() {
 
 
 // 4. AJAX: Finalize Job, Update Post with all translated blocks
-add_action( 'wp_ajax_odt_finalize_job', 'odt_finalize_job_callback' );
-function odt_finalize_job_callback() {
-    check_ajax_referer( 'odt_ajax_nonce', '_ajax_nonce' );
-    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'openai-duplicate-translate')] );
+add_action( 'wp_ajax_finalize_job', 'finalize_job_callback' );
+function finalize_job_callback() {
+    check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
+    if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
     $new_post_id = isset( $_POST['new_post_id'] ) ? intval( $_POST['new_post_id'] ) : 0;
@@ -469,7 +464,7 @@ function odt_finalize_job_callback() {
                                     : [];
 
     if ( ! $job_id || ! $new_post_id ) {
-        wp_send_json_error( ['message' => __('Job ID or New Post ID missing.', 'openai-duplicate-translate')] );
+        wp_send_json_error( ['message' => __('Job ID or New Post ID missing.', 'duplicate-translate')] );
     }
 
     // Basic validation of serialized blocks
@@ -479,7 +474,7 @@ function odt_finalize_job_callback() {
             $final_content_parts[] = $serialized_block_string;
         } else {
             // Log problematic block string
-            error_log("ODT Finalize: Invalid serialized block string received for job $job_id: " . substr($serialized_block_string,0,100));
+            error_log("Duplicate & Translate : Finalize: Invalid serialized block string received for job $job_id: " . substr($serialized_block_string,0,100));
         }
     }
     $final_content = implode( "\n\n", $final_content_parts );
@@ -492,11 +487,11 @@ function odt_finalize_job_callback() {
     ], true ); // true for WP_Error on failure
 
     if ( is_wp_error( $updated ) ) {
-        wp_send_json_error( ['message' => __('Error updating post content: ', 'openai-duplicate-translate') . $updated->get_error_message()] );
+        wp_send_json_error( ['message' => __('Error updating post content: ', 'duplicate-translate') . $updated->get_error_message()] );
     } else {
         delete_transient( $job_id ); // Clean up
         wp_send_json_success( [
-            'message'   => __('Translated post content updated successfully.', 'openai-duplicate-translate'),
+            'message'   => __('Translated post content updated successfully.', 'duplicate-translate'),
             'edit_link' => get_edit_post_link( $new_post_id, 'raw' )
         ] );
     }
@@ -504,11 +499,7 @@ function odt_finalize_job_callback() {
 }
 
 
-// --- HELPER FUNCTIONS ---
-// odt_duplicate_post (no change)
-// odt_translate_text_with_openai (no change)
-// odt_translate_block_recursive_for_ajax (no change from v1.2 - ensure it doesn't echo)
-function odt_duplicate_post( $post_to_duplicate ) {
+function duplicate_post( $post_to_duplicate ) {
     if ( ! $post_to_duplicate || ! is_object( $post_to_duplicate ) ) return new WP_Error( 'invalid_post', 'Invalid post object.' );
     $current_user = wp_get_current_user();
     $new_post_author = $current_user->ID;
@@ -539,7 +530,7 @@ function odt_duplicate_post( $post_to_duplicate ) {
     return $new_post_id;
 }
 
-function odt_translate_text_with_openai( $text_to_translate, $target_language, $api_key, $context = "general text" ) {
+function translate_text( $text_to_translate, $target_language, $api_key, $context = "general text" ) {
     if ( empty( trim( $text_to_translate ) ) ) return '';
     $api_url = 'https://api.openai.com/v1/chat/completions';
     $body = [
@@ -567,12 +558,15 @@ function odt_translate_text_with_openai( $text_to_translate, $target_language, $
     return new WP_Error( 'openai_unknown_error', 'Unknown error from OpenAI API. Response: ' . esc_html($response_body) );
 }
 
-function odt_translate_block_recursive_for_ajax( $block, $target_language, $api_key, $depth = 0 ) {
+function translate_block_recursive_for_ajax( $block, $target_language, $api_key, $depth = 0 ) {
+	if(empty( $block['innerHTML'] ))
+		return $block;
+	
     $translated_block = $block;
     if ( ! empty( $block['innerBlocks'] ) ) {
         $translated_inner_blocks = [];
         foreach ( $block['innerBlocks'] as $inner_block ) {
-            $translated_inner_block_result = odt_translate_block_recursive_for_ajax( $inner_block, $target_language, $api_key, $depth + 1 );
+            $translated_inner_block_result = translate_block_recursive_for_ajax( $inner_block, $target_language, $api_key, $depth + 1 );
             if (is_wp_error($translated_inner_block_result)) return $translated_inner_block_result; // Propagate error
             $translated_inner_blocks[] = $translated_inner_block_result;
         }
@@ -586,7 +580,7 @@ function odt_translate_block_recursive_for_ajax( $block, $target_language, $api_
         foreach ( $text_attributes_to_translate[$block['blockName']] as $attr_key ) {
             if ( ! empty( $translated_block['attrs'][ $attr_key ] ) ) {
                 $original_text = $translated_block['attrs'][ $attr_key ];
-                $translated_text = odt_translate_text_with_openai( $original_text, $target_language, $api_key, "block attribute: {$block['blockName']}/{$attr_key}" );
+                $translated_text = translate_text( $original_text, $target_language, $api_key, "block attribute: {$block['blockName']}/{$attr_key}" );
                 if ( is_wp_error( $translated_text ) ) return $translated_text;
                 $translated_block['attrs'][ $attr_key ] = $translated_text;
             }
@@ -596,14 +590,14 @@ function odt_translate_block_recursive_for_ajax( $block, $target_language, $api_
         $blocks_with_direct_innerHTML = ['core/paragraph', 'core/heading', 'core/list-item', 'core/html', 'core/quote']; // Classic editor content also uses innerHTML for 'core/html'
         if(in_array($block['blockName'], $blocks_with_direct_innerHTML) || ($block['blockName'] === 'core/html' && $depth === 0) || strpos($block['blockName'], 'core/') === 0 ) { // Be more generous for core blocks or top-level HTML
             $original_html = $block['innerHTML'];
-            $translated_html = odt_translate_text_with_openai( $original_html, $target_language, $api_key, "HTML content for block: {$block['blockName']}" );
+            $translated_html = translate_text( $original_html, $target_language, $api_key, "HTML content for block: {$block['blockName']}" );
             if ( is_wp_error( $translated_html ) ) return $translated_html;
             $translated_block['innerHTML'] = $translated_html;
         }
     }
     if ( isset($block['blockName']) && $block['blockName'] === 'core/image' ) {
         if ( ! empty( $translated_block['attrs']['alt'] ) ) {
-            $translated_alt = odt_translate_text_with_openai( $translated_block['attrs']['alt'], $target_language, $api_key, 'image alt text' );
+            $translated_alt = translate_text( $translated_block['attrs']['alt'], $target_language, $api_key, 'image alt text' );
             if ( is_wp_error( $translated_alt ) ) return $translated_alt;
             $translated_block['attrs']['alt'] = $translated_alt;
         }
