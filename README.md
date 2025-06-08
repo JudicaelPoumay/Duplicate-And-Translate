@@ -1,4 +1,5 @@
-![logo](logo.png)
+<img src="logo.png" alt="Plugin Logo" width="30%" />
+
 
 # Duplicate & Translate
 
