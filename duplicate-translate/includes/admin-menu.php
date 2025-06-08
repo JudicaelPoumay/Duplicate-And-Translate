@@ -14,16 +14,93 @@ function add_admin_menu() {
 
 function settings_init() {
     register_setting( 'options_group', 'openai_api_key' );
+    register_setting( 'options_group', 'gemini_api_key' );
+    register_setting( 'options_group', 'claude_api_key' );
+    register_setting( 'options_group', 'deepseek_api_key' );
+    register_setting( 'options_group', 'llm_provider', ['default' => 'openai'] );
+    register_setting( 'options_group', 'openai_model', ['default' => 'gpt-4o'] );
+    register_setting( 'options_group', 'gemini_model', ['default' => 'gemini-1.5-pro-latest'] );
+    register_setting( 'options_group', 'claude_model', ['default' => 'claude-opus-4-20250514'] );
+    register_setting( 'options_group', 'deepseek_model', ['default' => 'deepseek-chat'] );
+    register_setting( 'options_group', 'custom_model' );
     register_setting( 'options_group', 'target_language', ['default' => 'French'] );
+
     add_settings_section('settings_section', __('API Configuration', 'duplicate-translate'), null, 'options_group');
-    add_settings_field('openai_api_key_field', __('OpenAI API Key', 'duplicate-translate'), 'api_key_field_html', 'options_group', 'settings_section');
+    
+    add_settings_field('provider_selection_field', __('Select LLM Provider', 'duplicate-translate'), 'provider_selection_field_html', 'options_group', 'settings_section');
+    add_settings_field('api_key_fields', __('API Keys', 'duplicate-translate'), 'api_key_fields_html', 'options_group', 'settings_section');
+    add_settings_field('model_selection_field', __('Select Model', 'duplicate-translate'), 'model_selection_field_html', 'options_group', 'settings_section');
     add_settings_field('target_language_field', __('Target Language', 'duplicate-translate'), 'target_language_field_html', 'options_group', 'settings_section');
 }
 
-function api_key_field_html() {
-    $api_key = get_option( 'openai_api_key' );
-    echo '<input type="text" name="openai_api_key" value="' . esc_attr( $api_key ) . '" size="50" />';
-    echo '<p class="description">' . __('Enter your OpenAI API key.', 'duplicate-translate') . '</p>';
+function api_key_fields_html() {
+    ?>
+    <div id="openai-key-div">
+        <label for="openai_api_key">OpenAI API Key</label><br>
+        <input type="text" id="openai_api_key" name="openai_api_key" value="<?php echo esc_attr( get_option( 'openai_api_key' ) ); ?>" size="50" />
+    </div>
+    <div id="gemini-key-div" style="display:none;">
+        <label for="gemini_api_key">Gemini API Key</label><br>
+        <input type="text" id="gemini_api_key" name="gemini_api_key" value="<?php echo esc_attr( get_option( 'gemini_api_key' ) ); ?>" size="50" />
+    </div>
+    <div id="claude-key-div" style="display:none;">
+        <label for="claude_api_key">Claude API Key</label><br>
+        <input type="text" id="claude_api_key" name="claude_api_key" value="<?php echo esc_attr( get_option( 'claude_api_key' ) ); ?>" size="50" />
+    </div>
+    <div id="deepseek-key-div" style="display:none;">
+        <label for="deepseek_api_key">DeepSeek API Key</label><br>
+        <input type="text" id="deepseek_api_key" name="deepseek_api_key" value="<?php echo esc_attr( get_option( 'deepseek_api_key' ) ); ?>" size="50" />
+    </div>
+    <?php
+}
+
+function provider_selection_field_html() {
+    $provider = get_option('llm_provider', 'openai');
+    ?>
+    <label><input type="radio" name="llm_provider" value="openai" <?php checked($provider, 'openai'); ?>> OpenAI</label><br>
+    <label><input type="radio" name="llm_provider" value="gemini" <?php checked($provider, 'gemini'); ?>> Gemini</label><br>
+    <label><input type="radio" name="llm_provider" value="claude" <?php checked($provider, 'claude'); ?>> Claude</label><br>
+    <label><input type="radio" name="llm_provider" value="deepseek" <?php checked($provider, 'deepseek'); ?>> DeepSeek</label><br>
+    <?php
+}
+
+function model_selection_field_html() {
+    $openai_model = get_option('openai_model', 'gpt-4o');
+    $gemini_model = get_option('gemini_model', 'gemini-2.0-flash');
+    $claude_model = get_option('claude_model', 'claude-opus-4-20250514');
+    $deepseek_model = get_option('deepseek_model', 'deepseek-chat');
+    $custom_model = get_option('custom_model', '');
+
+    ?>
+    <div id="openai-models">
+        <label><input type="radio" name="openai_model" value="gpt-4o" <?php checked($openai_model, 'gpt-4o'); ?>> gpt-4o</label><br>
+        <label><input type="radio" name="openai_model" value="gpt-4-turbo" <?php checked($openai_model, 'gpt-4-turbo'); ?>> gpt-4-turbo</label><br>
+        <label><input type="radio" name="openai_model" value="gpt-3.5-turbo" <?php checked($openai_model, 'gpt-3.5-turbo'); ?>> gpt-3.5-turbo</label><br>
+    </div>
+    <div id="gemini-models" style="display:none;">
+        <label><input type="radio" name="gemini_model" value="gemini-2.0-flash" <?php checked($gemini_model, 'gemini-2.0-flash'); ?>> gemini-2.0-flash</label><br>
+        <label><input type="radio" name="gemini_model" value="gemini-1.5-pro-latest" <?php checked($gemini_model, 'gemini-1.5-pro-latest'); ?>> gemini-1.5-pro-latest</label><br>
+        <label><input type="radio" name="gemini_model" value="gemini-pro" <?php checked($gemini_model, 'gemini-pro'); ?>> gemini-pro</label><br>
+    </div>
+    <div id="claude-models" style="display:none;">
+        <label><input type="radio" name="claude_model" value="claude-opus-4-20250514" <?php checked($claude_model, 'claude-opus-4-20250514'); ?>> claude-opus-4-20250514</label><br>
+        <label><input type="radio" name="claude_model" value="claude-3-7-sonnet-latest" <?php checked($claude_model, 'claude-3-7-sonnet-latest'); ?>> claude-3-7-sonnet-latest</label><br>
+		<label><input type="radio" name="claude_model" value="claude-3-5-haiku-latest" <?php checked($claude_model, 'claude-3-5-haiku-latest'); ?>> claude-3-5-haiku-latest</label><br>
+    </div>
+    <div id="deepseek-models" style="display:none;">
+        <label><input type="radio" name="deepseek_model" value="deepseek-chat" <?php checked($deepseek_model, 'deepseek-chat'); ?>> deepseek-chat</label><br>
+        <label><input type="radio" name="deepseek_model" value="deepseek-reasoner" <?php checked($deepseek_model, 'deepseek-reasoner'); ?>> deepseek-reasoner</label><br>
+    </div>
+    <div id="custom-model-div" style="margin-top: 10px;">
+        <label for="custom_model">Custom Model</label><br>
+        <input type="text" id="custom_model" name="custom_model" value="<?php echo esc_attr($custom_model); ?>" size="40" placeholder="Specify a custom model name" />
+        <p class="description">If you fill this, it will override the selection above for the chosen provider. </p>
+        <p class="description">Beware : some models maybe slower than others, we do not recommend thinking models for translation tasks. </p>
+    </div>
+    <div id="chosen-model-container" style="margin-top: 1em;">
+        <b>You have chosen model: <span id="chosen-model-text"></span></b>
+    </div>
+    <?php
 }
 
 function target_language_field_html() {
@@ -55,6 +132,65 @@ function options_page_html() {
 			<a href="mailto:pro.judicael.poumay@gmail.com">My Email</a>
 		</div>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const providerRadios = document.querySelectorAll('input[name="llm_provider"]');
+        const modelGroups = {
+            openai: document.getElementById('openai-models'),
+            gemini: document.getElementById('gemini-models'),
+            claude: document.getElementById('claude-models'),
+            deepseek: document.getElementById('deepseek-models')
+        };
+        const keyDivs = {
+            openai: document.getElementById('openai-key-div'),
+            gemini: document.getElementById('gemini-key-div'),
+            claude: document.getElementById('claude-key-div'),
+            deepseek: document.getElementById('deepseek-key-div')
+        };
+        const chosenModelText = document.getElementById('chosen-model-text');
+        const customModelInput = document.getElementById('custom_model');
+
+        function updateChosenModelDisplay() {
+            let selectedProvider = document.querySelector('input[name="llm_provider"]:checked').value;
+            let chosenModel = '';
+
+            const customModelValue = customModelInput.value.trim();
+            if (customModelValue) {
+                chosenModel = customModelValue;
+            } else {
+                const modelRadio = document.querySelector('input[name="' + selectedProvider + '_model"]:checked');
+                if (modelRadio) {
+                    chosenModel = modelRadio.value;
+                }
+            }
+            chosenModelText.textContent = chosenModel;
+        }
+
+        function toggleVisibility() {
+            let selectedProvider = document.querySelector('input[name="llm_provider"]:checked').value;
+
+            for (const provider in modelGroups) {
+                if (modelGroups[provider]) {
+                    modelGroups[provider].style.display = provider === selectedProvider ? 'block' : 'none';
+                }
+            }
+            for (const provider in keyDivs) {
+                if (keyDivs[provider]) {
+                    keyDivs[provider].style.display = provider === selectedProvider ? 'block' : 'none';
+                }
+            }
+            updateChosenModelDisplay();
+        }
+
+        providerRadios.forEach(radio => radio.addEventListener('change', toggleVisibility));
+        
+        const modelRadios = document.querySelectorAll('input[name$="_model"]');
+        modelRadios.forEach(radio => radio.addEventListener('change', updateChosenModelDisplay));
+        customModelInput.addEventListener('input', updateChosenModelDisplay);
+
+        toggleVisibility(); // Initial check
+    });
+    </script>
     <?php
 }
 

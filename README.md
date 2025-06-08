@@ -7,18 +7,16 @@ Duplicate & Translate is a WordPress plugin that allows you to easily duplicate 
 ## Features
 
 *   **One-click duplication and translation:** Quickly create a translated version of any post.
+*   **Compatible with most LLM providers:** OpenAI, Google, Anthropic, DeepSeek
 *   **Gutenberg Block Editor Support:** Translates content from various core Gutenberg blocks, including headings, paragraphs, lists, quotes, buttons, and images (alt text).
-*   **OpenAI Integration:** Utilizes the power of OpenAI's language models (specifically `gpt-4o`) for accurate translations.
+*   **OpenAI Integration:** Utilizes the power of language models for accurate translations.
 *   **Configurable Target Language:** Choose from a list of predefined languages to translate your content into.
 *   **Secure API Key Storage:** Your OpenAI API key is stored securely in the WordPress database.
 *   **User-friendly Progress Page:** A real-time progress page keeps you informed about the translation process.
 
 ## Installation
 
-1.  Download the plugin as a ZIP file.
-2.  In your WordPress dashboard, go to **Plugins > Add New**.
-3.  Click **Upload Plugin** and select the ZIP file you downloaded.
-4.  Click **Install Now** and then **Activate Plugin**.
+Soon available on the WordPress Plugin marketplace.
 
 ## Usage
 
