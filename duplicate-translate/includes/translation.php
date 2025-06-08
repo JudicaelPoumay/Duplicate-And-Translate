@@ -35,35 +35,57 @@ function duplicate_post( $post_to_duplicate ) {
     return $new_post_id;
 }
 
-function translate_text( $text_to_translate, $target_language, $api_key, $context = "general text" ) {
+function translate_text( $text_to_translate, $target_language, $api_key, $context = "general text", $translation_context = '' ) {
     if ( empty( trim( $text_to_translate ) ) ) return '';
     $api_url = 'https://api.openai.com/v1/chat/completions';
+    
+    // Build system prompt with context if provided
+    $system_prompt = "You are a professional translator. Translate accurately to {$target_language} and maintain original HTML formatting if any. Only return the translated text.";
+    if (!empty($translation_context)) {
+        $system_prompt .= "\n\nAdditional context for translation:\n" . $translation_context;
+    }
+    
+    error_log('system_prompt: ' . $system_prompt);
     $body = [
-        'model'    => 'gpt-3.5-turbo',
+        'model'    => 'gpt-4o',
         'messages' => [
-            ['role' => 'system', 'content' => "You are a professional translator. Translate accurately to {$target_language} and maintain original HTML formatting if any. Only return the translated text."],
+            ['role' => 'system', 'content' => $system_prompt],
             ['role' => 'user', 'content' => $text_to_translate]
         ],
         'temperature' => 0.3, 'max_tokens'  => 2000,
     ];
     $headers = ['Authorization' => 'Bearer ' . $api_key, 'Content-Type'  => 'application/json'];
-    $response = wp_remote_post( $api_url, ['method'  => 'POST', 'headers' => $headers, 'body' => json_encode( $body ), 'timeout' => 60] );
-    if ( is_wp_error( $response ) ) return $response;
-    $response_body = wp_remote_retrieve_body( $response );
-    $response_data = json_decode( $response_body, true );
-    if ( isset( $response_data['choices'][0]['message']['content'] ) ) {
-        $translated_text = trim( $response_data['choices'][0]['message']['content'] );
-        if ( (substr($translated_text, 0, 1) == '"' && substr($translated_text, -1) == '"') || (substr($translated_text, 0, 1) == "'" && substr($translated_text, -1) == "'") ) {
-            $translated_text = substr($translated_text, 1, -1);
+    $max_attempts = 4;
+    $delay = 1;
+    $last_error = null;
+    for ($attempt = 1; $attempt <= $max_attempts; $attempt++) {
+        $response = wp_remote_post( $api_url, ['method'  => 'POST', 'headers' => $headers, 'body' => json_encode( $body ), 'timeout' => 60] );
+        if ( is_wp_error( $response ) ) {
+            $last_error = $response;
+        } else {
+            $response_body = wp_remote_retrieve_body( $response );
+            $response_data = json_decode( $response_body, true );
+            if ( isset( $response_data['choices'][0]['message']['content'] ) ) {
+                $translated_text = trim( $response_data['choices'][0]['message']['content'] );
+                if ( (substr($translated_text, 0, 1) == '"' && substr($translated_text, -1) == '"') || (substr($translated_text, 0, 1) == "'" && substr($translated_text, -1) == "'") ) {
+                    $translated_text = substr($translated_text, 1, -1);
+                }
+                return $translated_text;
+            } elseif ( isset( $response_data['error'] ) ) {
+                $last_error = new WP_Error( 'openai_api_error', 'OpenAI API Error: ' . $response_data['error']['message'] . ' (Context: '.esc_html($context).', Original: '. substr(esc_html($text_to_translate),0,50).'...)');
+            } else {
+                $last_error = new WP_Error( 'openai_unknown_error', 'Unknown error from OpenAI API. Response: ' . esc_html($response_body) );
+            }
         }
-        return $translated_text;
-    } elseif ( isset( $response_data['error'] ) ) {
-        return new WP_Error( 'openai_api_error', 'OpenAI API Error: ' . $response_data['error']['message'] . ' (Context: '.esc_html($context).', Original: '. substr(esc_html($text_to_translate),0,50).'...)');
+        if ($attempt < $max_attempts) {
+            sleep($delay);
+            $delay *= 2;
+        }
     }
-    return new WP_Error( 'openai_unknown_error', 'Unknown error from OpenAI API. Response: ' . esc_html($response_body) );
+    return $last_error;
 }
 
-function translate_block_recursive_for_ajax( $block, $target_language, $api_key, $depth = 0 ) {
+function translate_block_recursive_for_ajax( $block, $target_language, $api_key, $depth = 0, $translation_context = '' ) {
 	if(empty( $block['innerHTML'] ))
 		return $block;
 	
@@ -71,7 +93,7 @@ function translate_block_recursive_for_ajax( $block, $target_language, $api_key,
     if ( ! empty( $block['innerBlocks'] ) ) {
         $translated_inner_blocks = [];
         foreach ( $block['innerBlocks'] as $inner_block ) {
-            $translated_inner_block_result = translate_block_recursive_for_ajax( $inner_block, $target_language, $api_key, $depth + 1 );
+            $translated_inner_block_result = translate_block_recursive_for_ajax( $inner_block, $target_language, $api_key, $depth + 1, $translation_context );
             if (is_wp_error($translated_inner_block_result)) return $translated_inner_block_result; // Propagate error
             $translated_inner_blocks[] = $translated_inner_block_result;
         }
@@ -85,27 +107,30 @@ function translate_block_recursive_for_ajax( $block, $target_language, $api_key,
         foreach ( $text_attributes_to_translate[$block['blockName']] as $attr_key ) {
             if ( ! empty( $translated_block['attrs'][ $attr_key ] ) ) {
                 $original_text = $translated_block['attrs'][ $attr_key ];
-                $translated_text = translate_text( $original_text, $target_language, $api_key, "block attribute: {$block['blockName']}/{$attr_key}" );
+                $translated_text = translate_text( $original_text, $target_language, $api_key, "block attribute: {$block['blockName']}/{$attr_key}", $translation_context );
                 if ( is_wp_error( $translated_text ) ) return $translated_text;
                 $translated_block['attrs'][ $attr_key ] = $translated_text;
             }
         }
     }
-    if ( isset($block['blockName']) && ! empty( $block['innerHTML'] ) ) {
-        $blocks_with_direct_innerHTML = ['core/paragraph', 'core/heading', 'core/list-item', 'core/html', 'core/quote']; // Classic editor content also uses innerHTML for 'core/html'
-        if(in_array($block['blockName'], $blocks_with_direct_innerHTML) || ($block['blockName'] === 'core/html' && $depth === 0) || strpos($block['blockName'], 'core/') === 0 ) { // Be more generous for core blocks or top-level HTML
-            $original_html = $block['innerHTML'];
-            $translated_html = translate_text( $original_html, $target_language, $api_key, "HTML content for block: {$block['blockName']}" );
-            if ( is_wp_error( $translated_html ) ) return $translated_html;
-            $translated_block['innerHTML'] = $translated_html;
+    if ( isset($block['blockName']) && ! empty( $block['innerContent'][0] ) ) {
+        $blocks_with_direct_content = ['core/paragraph', 'core/heading', 'core/list-item', 'core/html', 'core/quote']; // Classic editor content also uses innerContent for 'core/html'
+        if(in_array($block['blockName'], $blocks_with_direct_content) || ($block['blockName'] === 'core/html' && $depth === 0) || strpos($block['blockName'], 'core/') === 0 ) { // Be more generous for core blocks or top-level HTML
+            $original_content = $block['innerContent'][0];
+            $translated_content = translate_text( $original_content, $target_language, $api_key, "content for block: {$block['blockName']}", $translation_context );
+            if ( is_wp_error( $translated_content ) ) return $translated_content;
+            $translated_block['innerContent'][0] = $translated_content;
         }
     }
     if ( isset($block['blockName']) && $block['blockName'] === 'core/image' ) {
         if ( ! empty( $translated_block['attrs']['alt'] ) ) {
-            $translated_alt = translate_text( $translated_block['attrs']['alt'], $target_language, $api_key, 'image alt text' );
+            $translated_alt = translate_text( $translated_block['attrs']['alt'], $target_language, $api_key, 'image alt text', $translation_context );
             if ( is_wp_error( $translated_alt ) ) return $translated_alt;
             $translated_block['attrs']['alt'] = $translated_alt;
         }
     }
+
+
+    error_log(print_r($translated_block, true));
     return $translated_block;
 }

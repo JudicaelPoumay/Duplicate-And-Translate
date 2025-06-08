@@ -16,6 +16,8 @@ jQuery(document).ready(function($) {
 	var finalLink = $('#final-link');
 	var spinner = $('#spinner');
 	var blockProgressInfo = $('#block-progress-info');
+	var translationForm = $('#translation-form');
+	var progressContainer = $('#progress-container');
 
 	var jobId = null;
 	var newPostId = null;
@@ -37,15 +39,36 @@ jQuery(document).ready(function($) {
 		blockProgressInfo.text('Translated ' + processedBlockCount + ' of ' + totalBlocks + ' blocks. Active API calls: ' + activeRequests);
 	}
 
-	// 1. Initiate Job
-	function initiateTranslationJob() {
+	// Handle form submission
+	$('#start-translation').on('click', function(e) {
+		e.preventDefault();
+		var targetLanguage = $('#target-language').val();
+		var translationContext = $('#translation-context').val();
+		
+		if (!targetLanguage) {
+			alert('<?php _e("Please select a target language.", "duplicate-translate"); ?>');
+			return;
+		}
+
+		// Hide form and show progress container
+		translationForm.hide();
+		progressContainer.show();
 		spinner.show();
+
+		// Start the translation process with the selected options
+		initiateTranslationJob(targetLanguage, translationContext);
+	});
+
+	// 1. Initiate Job
+	function initiateTranslationJob(targetLanguage, translationContext) {
 		addProgress('<?php _e("Initiating translation job...", "duplicate-translate"); ?>');
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
 				action: 'initiate_job',
 				original_post_id: originalPostId,
+				target_language: targetLanguage,
+				translation_context: translationContext,
 				_ajax_nonce: ajaxnonce
 			},
 			success: function(response) {
@@ -107,15 +130,16 @@ jQuery(document).ready(function($) {
 			data: {
 				action: 'process_block_translation',
 				job_id: jobId,
-				block_meta_index: blockMetaIndex, // Server uses this to fetch the specific block from transient
-				 // raw_block_data: blockMeta.raw_block, // Send raw block for translation
+				block_meta_index: blockMetaIndex,
+				target_language: targetLanguage,
+				translation_context: translationContext,
 				_ajax_nonce: ajaxnonce
 			},
 			success: function(response) {
 				activeRequests--;
 				processedBlockCount++;
 				if (response.success) {
-					addProgress('Block ' + (blockMetaIndex + 1) + ' (' + response.data.block_name + ') translated.', 'success');
+					addProgress('Block ' + (blockMetaIndex + 1) + ' translated.', 'success');
 					translatedBlocksData[blockMetaIndex] = response.data.translated_block_content; // Store serialized block
 					blocksToTranslateMeta[blockMetaIndex].status = 'done';
 				} else {
@@ -177,7 +201,5 @@ jQuery(document).ready(function($) {
 		});
 	}
 
-	// Start the whole process
-	initiateTranslationJob();
 });
 </script>

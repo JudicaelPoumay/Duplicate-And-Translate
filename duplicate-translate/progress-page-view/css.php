@@ -13,6 +13,61 @@ body {
   background-color: #f9f9f9;
   color: #333;
 }
+
+.translation-form {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  max-width: 600px;
+}
+
+.translation-form h2 {
+  margin-top: 0;
+  color: #23282d;
+  font-size: 1.3em;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.button-primary {
+  background: #0073aa;
+  border-color: #006291;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  border: none;
+}
+
+.button-primary:hover {
+  background: #005177;
+}
+
 .progress-log {
   background-color: #fff;
   border: 1px solid #ddd;

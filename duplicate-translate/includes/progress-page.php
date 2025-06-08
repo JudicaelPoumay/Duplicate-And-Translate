@@ -41,7 +41,9 @@ function initiate_job_callback() {
     }
 
     $api_key = get_option( 'openai_api_key' );
-    $target_language = get_option( 'target_language', 'French' );
+    $target_language = isset( $_POST['target_language'] ) ? sanitize_text_field( $_POST['target_language'] ) : get_option( 'target_language', 'French' );
+    $translation_context = isset( $_POST['translation_context'] ) ? sanitize_textarea_field( $_POST['translation_context'] ) : '';
+
     if ( empty( $api_key ) || empty( $target_language ) ) {
         wp_send_json_error( ['message' => __('API Key or Target Language not set.', 'duplicate-translate')] );
     }
@@ -53,7 +55,7 @@ function initiate_job_callback() {
 
         // b. Translate Title
         $translated_title_text = $original_post->post_title . ' (' . $target_language . ')'; // Fallback
-        $translated_title = translate_text( $original_post->post_title, $target_language, $api_key, 'post title' );
+        $translated_title = translate_text( $original_post->post_title, $target_language, $api_key, 'post title', $translation_context );
         if ( ! is_wp_error( $translated_title ) && !empty($translated_title) ) {
             $translated_title_text = $translated_title;
         } else if (is_wp_error($translated_title)) {
@@ -83,13 +85,13 @@ function initiate_job_callback() {
             ];
         }
 
-
         // d. Store Job Data in Transient
         $job_id = 'job_' . $original_post_id . '_' . time();
         $job_data = [
             'original_post_id' => $original_post_id,
             'new_post_id'      => $new_post_id,
             'target_language'  => $target_language,
+            'translation_context' => $translation_context,
             'api_key'          => $api_key, // Store for block translation step
             'blocks_meta_full' => $blocks_meta, // Store full block data for server-side processing
             'status'           => 'blocks_ready'
@@ -101,7 +103,6 @@ function initiate_job_callback() {
         $client_blocks_meta = array_map(function($bm) {
             return ['index' => $bm['original_index'], 'blockName' => $bm['block_name'], 'status' => 'pending'];
         }, $blocks_meta);
-
 
         wp_send_json_success([
             'message'     => sprintf(__('Job initiated. New post ID: %d. Title translated. %d blocks parsed.', 'duplicate-translate'), $new_post_id, count($blocks_meta)),
@@ -138,9 +139,10 @@ function process_block_translation_callback() {
     $block_to_translate_raw = $job_data['blocks_meta_full'][$block_meta_index]['raw_block'];
     $target_language = $job_data['target_language'];
     $api_key = $job_data['api_key'];
+    $translation_context = isset($job_data['translation_context']) ? $job_data['translation_context'] : '';
 
     // Use the recursive translator (modified to not echo, just return block or WP_Error)
-    $translated_block_array = translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, $api_key );
+    $translated_block_array = translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, $api_key, 0, $translation_context );
 
     if ( is_wp_error( $translated_block_array ) ) {
         error_log('Duplicate & Translate : Block Translation Error (Job: '.$job_id.', Block Index: '.$block_meta_index.'): ' . $translated_block_array->get_error_message());
