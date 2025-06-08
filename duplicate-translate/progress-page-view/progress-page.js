@@ -25,6 +25,7 @@ jQuery(document).ready(function($) {
 	}
 
 	function updateBlockProgress() {
+		$('#block-progress-bar').val(processedBlockCount/totalBlocks);
 		blockProgressInfo.text(i18n.blocksTranslated.replace('%d1', processedBlockCount).replace('%d2', totalBlocks) + ' ' + i18n.activeAPI.replace('%d', activeRequests));
 	}
 
@@ -148,6 +149,7 @@ jQuery(document).ready(function($) {
 		spinner.show();
 		updateBlockProgress(); // Final update
 		addProgress(i18n.finalizingPost);
+		blockProgressInfo.hide();
 
 		var finalBlockArray = translatedBlocksData.filter(function (el) { return el != null; });
 		if (finalBlockArray.length !== totalBlocks && totalBlocks > 0) {

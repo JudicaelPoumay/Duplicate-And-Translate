@@ -46,6 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         $style = ( $debug_mode === 'on' ) ? '' : 'style="display:none;"';
         ?>
 		<div id="progress-log" class="progress-log" <?php echo $style; ?>></div>
+		<progress id="block-progress-bar" value="0" max="1" style="width: 100%;"></progress>
 		<div id="block-progress-info" class="block-progress"></div>
 		<div id="final-link"></div>
 		<div id="donation-button">
