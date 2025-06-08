@@ -47,6 +47,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div id="donation-button">
 			<?php require PLUGIN_DIR . 'progress-page-view/donation-button.php'; ?>
 		</div>
+		<div style="margin-top: 1em;">
+			<h3>Contact :</h3>
+			<a href="https://www.linkedin.com/in/judicael-poumay/" target="_blank" rel="noopener noreferrer">My LinkedIn</a> |
+			<a href="https://thethoughtprocess.xyz/" target="_blank" rel="noopener noreferrer">My Website</a> |
+			<a href="mailto:pro.judicael.poumay@gmail.com">My Email</a>
+		</div>
 	</div>
 
 	<?php wp_print_scripts('dt-progress-page-script'); ?>

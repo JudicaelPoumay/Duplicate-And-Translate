@@ -83,7 +83,8 @@
         </style>
         
         <link href="https://fonts.googleapis.com/css?display=swap&amp;family=Cookie" rel="stylesheet">
-                <p style="padding-bottom: 10px;">Do you like this plugin? You can donate here =>  
+                <h3>Do you like this plugin? You can donate here : </h3>
+                <p style="padding-bottom: 10px;">
             <a class="bmc-btn" target="_blank" href="https://www.buymeacoffee.com/jpoumay" data-wpel-link="external" rel="external noopener noreferrer"><svg id="coffee-logo-border" viewBox="0 0 884 1279" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M791.109 297.518L790.231 297.002L788.201 296.383C789.018 297.072 790.04 297.472 791.109 297.518Z" fill="#0D0C22"></path>
                 <path d="M803.896 388.891L802.916 389.166L803.896 388.891Z" fill="#0D0C22"></path>
