@@ -1,14 +1,26 @@
 <?php
+/**
+ * Progress Page for Duplicate & Translate Plugin.
+ *
+ * This file contains the code for rendering the progress page,
+ * handling the translation process via AJAX, and updating the post.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-
-// 1. Action to Render the Initial Progress Page (with JavaScript)
+// --- HOOKS ---
 add_action( 'admin_action_render_progress_page', 'render_progress_page_callback' );
+add_action( 'wp_ajax_initiate_job', 'initiate_job_callback' );
+add_action( 'wp_ajax_process_block_translation', 'process_block_translation_callback' );
+add_action( 'wp_ajax_finalize_job', 'finalize_job_callback' );
 
-// Enqueue scripts and styles for the progress page
+/**
+ * Enqueue scripts and styles for the progress page.
+ */
 function dt_progress_page_assets() {
     // Enqueue Style
     wp_enqueue_style(
@@ -27,7 +39,7 @@ function dt_progress_page_assets() {
         true
     );
 
-    // Localize Script
+    // Localize Script for JS
     $translation_array = [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'ajaxnonce' => wp_create_nonce('ajax_nonce'),
@@ -54,15 +66,21 @@ function dt_progress_page_assets() {
     wp_localize_script('dt-progress-page-script', 'progressPageData', $translation_array);
 }
 
+/**
+ * Render the initial progress page.
+ */
 function render_progress_page_callback() {
+    // --- SECURITY CHECK ---
     if ( ! isset( $_GET['post_id'], $_GET['_wpnonce'] ) ||
          ! wp_verify_nonce( $_GET['_wpnonce'], 'render_progress_page_nonce_' . $_GET['post_id'] ) ||
          ! current_user_can( 'edit_posts' ) ) {
         wp_die( 'Security check failed or insufficient permissions. Are you logged in? Try reloading the admin page.' );
     }
 
+    // --- ENQUEUE ASSETS ---
     dt_progress_page_assets();
 
+    // --- CHECK CONFIGURATION ---
 	$api_key = get_option( 'openai_api_key' );
 	$target_language = get_option( 'target_language' );
 	if ( empty( $api_key ) || empty( $target_language ) ) 
@@ -71,16 +89,21 @@ function render_progress_page_callback() {
 		exit;
 	}
 
+    // --- RENDER HTML ---
 	require PLUGIN_DIR . 'progress-page-view/html.php';
     exit;
 }
 
-// 2. AJAX: Initiate Job, Duplicate, Translate Title, Parse Blocks
-add_action( 'wp_ajax_initiate_job', 'initiate_job_callback' );
+/**
+ * AJAX callback to initiate the translation job.
+ * This includes duplicating the post, translating the title, and parsing the blocks.
+ */
 function initiate_job_callback() {
+    // --- SECURITY & PERMISSION CHECK ---
     check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
     if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
+    // --- VALIDATE INPUT ---
     $original_post_id = isset( $_POST['original_post_id'] ) ? intval( $_POST['original_post_id'] ) : 0;
     if ( ! $original_post_id ) wp_send_json_error( ['message' => __('Original Post ID missing.', 'duplicate-translate')] );
 
@@ -98,13 +121,13 @@ function initiate_job_callback() {
     }
 
     try {
-        // a. Duplicate Post
+        // --- DUPLICATE POST ---
         $new_post_id = duplicate_post( $original_post );
         if ( is_wp_error( $new_post_id ) ) throw new Exception( __('Error duplicating post: ', 'duplicate-translate') . $new_post_id->get_error_message() );
 
-        // b. Translate Title
+        // --- TRANSLATE TITLE ---
         $translated_title_text = $original_post->post_title . ' (' . $target_language . ')'; // Fallback
-        $translated_title = translate_text( $original_post->post_title, $target_language, $api_key, 'post title', $translation_context );
+        $translated_title = translate_text( $original_post->post_title, $target_language, 'post title', $translation_context );
         if ( ! is_wp_error( $translated_title ) && !empty($translated_title) ) {
             $translated_title_text = $translated_title;
         } else if (is_wp_error($translated_title)) {
@@ -113,7 +136,7 @@ function initiate_job_callback() {
         }
         wp_update_post( ['ID' => $new_post_id, 'post_title' => $translated_title_text, 'post_name' => sanitize_title( $translated_title_text ), 'post_status' => 'draft'] );
 
-        // c. Parse Blocks from Original Post
+        // --- PARSE BLOCKS ---
         $blocks_raw = parse_blocks( $original_post->post_content );
         $blocks_meta = [];
         if ( !empty($blocks_raw) ) {
@@ -134,7 +157,7 @@ function initiate_job_callback() {
             ];
         }
 
-        // d. Store Job Data in Transient
+        // --- STORE JOB DATA IN TRANSIENT ---
         $job_id = 'job_' . $original_post_id . '_' . time();
         $job_data = [
             'original_post_id' => $original_post_id,
@@ -147,6 +170,7 @@ function initiate_job_callback() {
         ];
         set_transient( $job_id, $job_data, HOUR_IN_SECONDS * 3 );
 
+        // --- PREPARE CLIENT RESPONSE ---
         // Client only needs meta for iteration, not full raw_block for each item if server fetches block from transient.
         // For simplicity now, client isn't directly using the raw_block from blocks_meta, server will.
         $client_blocks_meta = array_map(function($bm) {
@@ -166,13 +190,15 @@ function initiate_job_callback() {
     wp_die();
 }
 
-
-// 3. AJAX: Process a Single Block's Translation
-add_action( 'wp_ajax_process_block_translation', 'process_block_translation_callback' );
+/**
+ * AJAX callback to process the translation of a single block.
+ */
 function process_block_translation_callback() {
+    // --- SECURITY & PERMISSION CHECK ---
     check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
     if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
+    // --- VALIDATE INPUT ---
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
     $block_meta_index = isset( $_POST['block_meta_index'] ) ? intval( $_POST['block_meta_index'] ) : -1;
 
@@ -180,20 +206,23 @@ function process_block_translation_callback() {
         wp_send_json_error( ['message' => __('Job ID or Block Index missing.', 'duplicate-translate')] );
     }
 
+    // --- GET JOB DATA ---
     $job_data = get_transient( $job_id );
     if ( false === $job_data || !isset($job_data['blocks_meta_full'][$block_meta_index]) ) {
         wp_send_json_error( ['message' => __('Job data or specific block not found or expired.', 'duplicate-translate')] );
     }
 
+    // --- TRANSLATE BLOCK ---
     $block_to_translate_raw = $job_data['blocks_meta_full'][$block_meta_index]['raw_block'];
     $target_language = $job_data['target_language'];
     $api_key = $job_data['api_key'];
     $translation_context = isset($job_data['translation_context']) ? $job_data['translation_context'] : '';
 
-    // Use the recursive translator (modified to not echo, just return block or WP_Error)
-    $translated_block_array = translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, $api_key, 0, $translation_context );
+    // Use the recursive translator
+    $translated_block_array = translate_block_recursive_for_ajax( $block_to_translate_raw, $target_language, 0, $translation_context );
 
     if ( is_wp_error( $translated_block_array ) ) {
+        // --- HANDLE TRANSLATION ERROR ---
         error_log('Duplicate & Translate : Block Translation Error (Job: '.$job_id.', Block Index: '.$block_meta_index.'): ' . $translated_block_array->get_error_message());
         wp_send_json_error( [
             'message' => $translated_block_array->get_error_message(),
@@ -201,6 +230,7 @@ function process_block_translation_callback() {
             'original_block_content' => serialize_block( $block_to_translate_raw ) // Send original back
         ] );
     } else {
+        // --- SEND SUCCESS RESPONSE ---
         wp_send_json_success( [
             'message' => 'Block translated', // Client already adds more context
             'block_name' => $translated_block_array['blockName'] ?: 'unknown',
@@ -210,13 +240,15 @@ function process_block_translation_callback() {
     wp_die();
 }
 
-
-// 4. AJAX: Finalize Job, Update Post with all translated blocks
-add_action( 'wp_ajax_finalize_job', 'finalize_job_callback' );
+/**
+ * AJAX callback to finalize the job and update the post with translated blocks.
+ */
 function finalize_job_callback() {
+    // --- SECURITY & PERMISSION CHECK ---
     check_ajax_referer( 'ajax_nonce', '_ajax_nonce' );
     if ( ! current_user_can( 'edit_posts' ) ) wp_send_json_error( ['message' => __('Permissions error.', 'duplicate-translate')] );
 
+    // --- VALIDATE INPUT ---
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
     $new_post_id = isset( $_POST['new_post_id'] ) ? intval( $_POST['new_post_id'] ) : 0;
     $translated_blocks_serialized = isset( $_POST['translated_blocks_serialized'] ) && is_array($_POST['translated_blocks_serialized'])
@@ -227,7 +259,7 @@ function finalize_job_callback() {
         wp_send_json_error( ['message' => __('Job ID or New Post ID missing.', 'duplicate-translate')] );
     }
 
-    // Basic validation of serialized blocks
+    // --- FINALIZE CONTENT ---
     $final_content_parts = [];
     foreach ($translated_blocks_serialized as $serialized_block_string) {
         if (is_string($serialized_block_string) && !empty($serialized_block_string)) {
@@ -239,7 +271,7 @@ function finalize_job_callback() {
     }
     $final_content = implode( "\n\n", $final_content_parts );
 
-
+    // --- UPDATE POST ---
     $updated = wp_update_post( [
         'ID'           => $new_post_id,
         'post_content' => $final_content,
@@ -248,12 +280,14 @@ function finalize_job_callback() {
 
     if ( is_wp_error( $updated ) ) {
         wp_send_json_error( ['message' => __('Error updating post content: ', 'duplicate-translate') . $updated->get_error_message()] );
-    } else {
-        delete_transient( $job_id ); // Clean up
-        wp_send_json_success( [
-            'message'   => __('Translated post content updated successfully.', 'duplicate-translate'),
-            'edit_link' => get_edit_post_link( $new_post_id, 'raw' )
-        ] );
     }
+
+    // --- CLEANUP AND SEND RESPONSE ---
+    delete_transient( $job_id ); // Cleanup
+
+    wp_send_json_success([
+        'message'   => __('Translated post content updated successfully.', 'duplicate-translate'),
+        'edit_post_url' => get_edit_post_link( $new_post_id, 'raw' )
+    ]);
     wp_die();
 }

@@ -1,11 +1,27 @@
 <?php
+/**
+ * Translation Core for Duplicate & Translate Plugin.
+ *
+ * This file contains the core functions for duplicating posts and translating content
+ * using various AI providers.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
+/**
+ * Duplicate a post, including its taxonomies and meta data.
+ *
+ * @param WP_Post $post_to_duplicate The post object to duplicate.
+ * @return int|WP_Error The new post ID on success, or a WP_Error object on failure.
+ */
 function duplicate_post( $post_to_duplicate ) {
     if ( ! $post_to_duplicate || ! is_object( $post_to_duplicate ) ) return new WP_Error( 'invalid_post', 'Invalid post object.' );
+
+    // --- PREPARE NEW POST DATA ---
     $current_user = wp_get_current_user();
     $new_post_author = $current_user->ID;
     $args = [
@@ -17,13 +33,19 @@ function duplicate_post( $post_to_duplicate ) {
         'post_type' => $post_to_duplicate->post_type, 'to_ping' => $post_to_duplicate->to_ping,
         'menu_order' => $post_to_duplicate->menu_order
     ];
+
+    // --- INSERT NEW POST ---
     $new_post_id = wp_insert_post( $args, true );
     if ( is_wp_error( $new_post_id ) ) return $new_post_id;
+
+    // --- COPY TAXONOMIES ---
     $taxonomies = get_object_taxonomies( $post_to_duplicate->post_type );
     foreach ( $taxonomies as $taxonomy ) {
         $post_terms = wp_get_object_terms( $post_to_duplicate->ID, $taxonomy, ['fields' => 'slugs'] );
         wp_set_object_terms( $new_post_id, $post_terms, $taxonomy, false );
     }
+
+    // --- COPY META DATA ---
     $post_meta_keys = get_post_custom_keys( $post_to_duplicate->ID );
     if ( ! empty( $post_meta_keys ) ) {
         foreach ( $post_meta_keys as $meta_key ) {
@@ -32,15 +54,27 @@ function duplicate_post( $post_to_duplicate ) {
             foreach ( $meta_values as $meta_value ) add_post_meta( $new_post_id, $meta_key, maybe_unserialize($meta_value) );
         }
     }
+
     return $new_post_id;
 }
 
+/**
+ * Translate text using the configured AI provider.
+ *
+ * @param string $text_to_translate The text to translate.
+ * @param string $target_language The target language.
+ * @param string $context A description of the text's context.
+ * @param string $translation_context Additional context for the translation.
+ * @return string|WP_Error The translated text on success, or a WP_Error object on failure.
+ */
 function translate_text( $text_to_translate, $target_language, $context = "general text", $translation_context = '' ) {
     if ( empty( trim( $text_to_translate ) ) ) return '';
 
+    // --- GET PROVIDER AND MODEL ---
     $provider = get_option('llm_provider', 'openai');
     $custom_model = get_option('custom_model');
     
+    // --- PREPARE API REQUEST ---
     $model = '';
     $api_url = '';
     $headers = [];
@@ -114,6 +148,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
             break;
     }
 
+    // --- SEND API REQUEST WITH RETRY LOGIC ---
     $max_attempts = 4;
     $delay = 2;
     $last_error = null;
@@ -122,6 +157,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
         if ( is_wp_error( $response ) ) {
             $last_error = $response;
         } else {
+            // --- PARSE RESPONSE ---
             $response_body = wp_remote_retrieve_body( $response );
             $response_data = json_decode( $response_body, true );
 
@@ -141,6 +177,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
             }
             
             if (!empty($translated_text)) {
+                // --- CLEAN AND RETURN TRANSLATED TEXT ---
                 $translated_text = trim( $translated_text );
                 if ( (substr($translated_text, 0, 1) == '"' && substr($translated_text, -1) == '"') || (substr($translated_text, 0, 1) == "'" && substr($translated_text, -1) == "'") ) {
                     $translated_text = substr($translated_text, 1, -1);
@@ -152,6 +189,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
                 $last_error = new WP_Error( 'unknown_api_error', 'Unknown error from ' . $provider . ' API. Response: ' . esc_html($response_body) );
             }
         }
+        // --- DELAY BEFORE RETRY ---
         if ($attempt < $max_attempts) {
             sleep($delay);
             $delay *= 3;
@@ -160,11 +198,22 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
     return $last_error;
 }
 
+/**
+ * Recursively translate a Gutenberg block and its inner blocks.
+ *
+ * @param array  $block The block to translate.
+ * @param string $target_language The target language.
+ * @param int    $depth The current recursion depth.
+ * @param string $translation_context Additional context for the translation.
+ * @return array|WP_Error The translated block on success, or a WP_Error object on failure.
+ */
 function translate_block_recursive_for_ajax( $block, $target_language, $depth = 0, $translation_context = '' ) {
 	if(empty( $block['innerHTML'] ))
 		return $block;
 	
     $translated_block = $block;
+
+    // --- TRANSLATE INNER BLOCKS ---
     if ( ! empty( $block['innerBlocks'] ) ) {
         $translated_inner_blocks = [];
         foreach ( $block['innerBlocks'] as $inner_block ) {
@@ -174,6 +223,8 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
         }
         $translated_block['innerBlocks'] = $translated_inner_blocks;
     }
+
+    // --- TRANSLATE TEXT ATTRIBUTES ---
     $text_attributes_to_translate = [
         'core/heading'   => ['content'], 'core/paragraph' => ['content'], 'core/list' => ['values'],
         'core/quote'     => ['value', 'citation'], 'core/button' => ['text'],
@@ -188,6 +239,8 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
             }
         }
     }
+
+    // --- TRANSLATE INNER CONTENT ---
     if ( isset($block['blockName']) && ! empty( $block['innerContent'][0] ) ) {
         $blocks_with_direct_content = ['core/paragraph', 'core/heading', 'core/list-item', 'core/html', 'core/quote']; // Classic editor content also uses innerContent for 'core/html'
         if(in_array($block['blockName'], $blocks_with_direct_content) || ($block['blockName'] === 'core/html' && $depth === 0) || strpos($block['blockName'], 'core/') === 0 ) { // Be more generous for core blocks or top-level HTML
@@ -197,6 +250,8 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
             $translated_block['innerContent'][0] = $translated_content;
         }
     }
+
+    // --- TRANSLATE IMAGE ALT TEXT ---
     if ( isset($block['blockName']) && $block['blockName'] === 'core/image' ) {
         if ( ! empty( $translated_block['attrs']['alt'] ) ) {
             $translated_alt = translate_text( $translated_block['attrs']['alt'], $target_language, 'image alt text', $translation_context );
@@ -204,7 +259,6 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
             $translated_block['attrs']['alt'] = $translated_alt;
         }
     }
-
 
     error_log(print_r($translated_block, true));
     return $translated_block;

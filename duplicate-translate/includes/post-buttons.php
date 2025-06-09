@@ -1,13 +1,33 @@
 <?php
+/**
+ * Post Buttons for Duplicate & Translate Plugin.
+ *
+ * This file contains the code for adding the "Duplicate & Translate"
+ * button to the post row actions.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
+// --- HOOKS ---
 add_filter( 'post_row_actions', 'add_duplicate_translate_row_action', 10, 2 );
+
+/**
+ * Add the "Duplicate & Translate" row action to the post list.
+ *
+ * @param array   $actions The existing row actions.
+ * @param WP_Post $post    The current post object.
+ * @return array The modified row actions.
+ */
 function add_duplicate_translate_row_action( $actions, $post ) {
     if ( $post->post_type === 'post') {
+        // --- CREATE URL ---
         $url = admin_url( 'admin.php?action=render_progress_page&post_id=' . $post->ID . '&_wpnonce=' . wp_create_nonce( 'render_progress_page_nonce_' . $post->ID ) );
+        
+        // --- ADD ACTION ---
         $actions['duplicate_translate'] = sprintf(
             '<a href="%s" target="_blank" aria-label="%s">%s</a>',
             esc_url( $url ),

@@ -1,4 +1,11 @@
 <?php
+/**
+ * Error Page for Duplicate & Translate Plugin.
+ *
+ * This file contains the HTML for the configuration error page.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.

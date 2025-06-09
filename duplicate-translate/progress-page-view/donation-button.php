@@ -1,3 +1,12 @@
+<?php
+/**
+ * Donation Button for Duplicate & Translate Plugin.
+ *
+ * This file contains the "Buy Me a Coffee" donation button.
+ *
+ * @package Duplicate-And-Translate
+ */
+?>
 <div id="buymeacoffee_widget-2" class="bs-widget buymeacoffee_widget">        
     <div>
         <style>

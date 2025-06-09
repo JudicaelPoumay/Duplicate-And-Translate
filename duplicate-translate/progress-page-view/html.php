@@ -1,4 +1,11 @@
 <?php
+/**
+ * HTML for the Progress Page.
+ *
+ * This file contains the HTML structure for the translation progress page.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
@@ -13,13 +20,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title><?php _e('Translation Progress', 'duplicate-translate'); ?></title>
 	<?php 
+        // --- STYLES ---
         wp_print_styles('dt-progress-page-style'); 
     ?>
 </head>
 <body>
+    <!-- HEADER -->
 	<h1><?php _e('Translation Progress', 'duplicate-translate'); ?> <span id="spinner" class="spinner" style="display:none;"></span></h1>
 	<p><?php _e('Do not close this tab until the translation is complete.', 'duplicate-translate'); ?></p>
-	<div id="translation-form" class="translation-form">
+	
+    <!-- TRANSLATION FORM -->
+    <div id="translation-form" class="translation-form">
 		<h2><?php _e('Translation Settings', 'duplicate-translate'); ?></h2>
 		<div class="form-group">
 			<label for="target-language"><?php _e('Target Language:', 'duplicate-translate'); ?></label>
@@ -32,8 +43,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<button id="start-translation" class="button button-primary"><?php _e('Start Translation', 'duplicate-translate'); ?></button>
 	</div>
 
+    <!-- PROGRESS CONTAINER -->
 	<div id="progress-container" style="display:none;">
         <?php 
+        // --- DEBUG MODE ---
         $debug_mode = get_option( 'dt_debug_mode' );
         $style = ( $debug_mode === 'on' ) ? '' : 'style="display:none;"';
         ?>

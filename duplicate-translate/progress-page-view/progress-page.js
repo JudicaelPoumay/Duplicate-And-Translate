@@ -1,3 +1,12 @@
+/**
+ * Progress Page Script for Duplicate & Translate Plugin.
+ *
+ * This file handles the frontend logic for the translation progress page,
+ * including making AJAX calls to the backend to process the translation.
+ *
+ * @package Duplicate-And-Translate
+ */
+
 const { ajaxurl, ajaxnonce, originalPostId, i18n, parallelBatchSize } = progressPageData;
 
 jQuery(document).ready(function($) {
@@ -16,6 +25,11 @@ jQuery(document).ready(function($) {
 	var totalBlocks = 0;
 	var processedBlockCount = 0;
 
+	/**
+	 * Add a message to the progress log.
+	 * @param {string} message The message to add.
+	 * @param {string} type The message type (info, error, success).
+	 */
 	function addProgress(message, type = 'info') {
 		var date = new Date();
 		var timeString = '[' + ('0' + date.getHours()).slice(-2) + ':' + ('0' + date.getMinutes()).slice(-2) + ':' + ('0' + date.getSeconds()).slice(-2) + '] ';
@@ -24,12 +38,15 @@ jQuery(document).ready(function($) {
 		progressLog.scrollTop(progressLog[0].scrollHeight);
 	}
 
+	/**
+	 * Update the block progress bar and info text.
+	 */
 	function updateBlockProgress() {
 		$('#block-progress-bar').val(processedBlockCount/totalBlocks);
 		blockProgressInfo.text(i18n.blocksTranslated.replace('%d1', processedBlockCount).replace('%d2', totalBlocks) + ' ' + i18n.activeAPI.replace('%d', activeRequests));
 	}
 
-	// Handle form submission
+	// --- EVENT HANDLERS ---
 	$('#start-translation').on('click', function(e) {
 		e.preventDefault();
 		var targetLanguage = $('#target-language').val();
@@ -40,16 +57,22 @@ jQuery(document).ready(function($) {
 			return;
 		}
 
-		// Hide form and show progress container
+		// --- UI UPDATE ---
 		translationForm.hide();
 		progressContainer.show();
 		spinner.show();
 
-		// Start the translation process with the selected options
+		// --- START TRANSLATION ---
 		initiateTranslationJob(targetLanguage, translationContext);
 	});
 
-	// 1. Initiate Job
+	// --- AJAX FUNCTIONS ---
+
+	/**
+	 * 1. Initiate the translation job.
+	 * @param {string} targetLanguage The target language.
+	 * @param {string} translationContext Additional context for translation.
+	 */
 	function initiateTranslationJob(targetLanguage, translationContext) {
 		addProgress(i18n.initiatingJob);
 		$.ajax({
@@ -89,7 +112,9 @@ jQuery(document).ready(function($) {
 		});
 	}
 
-	// 2. Process Block Queue (Manages concurrent requests)
+	/**
+	 * 2. Process the block queue, managing concurrent requests.
+	 */
 	function processBlockQueue() {
 		updateBlockProgress();
 		if (processedBlockCount === totalBlocks && activeRequests === 0) {
@@ -109,7 +134,11 @@ jQuery(document).ready(function($) {
 		}
 	}
 
-	// 3. Translate Single Block
+	/**
+	 * 3. Translate a single block.
+	 * @param {number} blockMetaIndex The index of the block in the meta array.
+	 * @param {object} blockMeta The metadata for the block.
+	 */
 	function translateSingleBlock(blockMetaIndex, blockMeta) {
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
@@ -144,7 +173,9 @@ jQuery(document).ready(function($) {
 		});
 	}
 
-	// 4. Finalize Job
+	/**
+	 * 4. Finalize the translation job.
+	 */
 	function finalizeJob() {
 		spinner.show();
 		updateBlockProgress(); // Final update

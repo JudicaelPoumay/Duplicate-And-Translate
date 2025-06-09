@@ -1,18 +1,33 @@
 <?php
+/**
+ * Admin Menu for Duplicate & Translate Plugin.
+ *
+ * This file contains the code for the admin menu, settings page,
+ * and all related functionality for the Duplicate & Translate plugin.
+ *
+ * @package Duplicate-And-Translate
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-// --- SETTINGS (Unchanged from previous version) ---
+// --- HOOKS ---
 add_action( 'admin_menu', 'add_admin_menu' );
 add_action( 'admin_init', 'settings_init' );
 
+/**
+ * Add the options page to the admin menu.
+ */
 function add_admin_menu() {
     add_options_page('Duplicate & Translate', 'Duplicate & Translate', 'manage_options', 'duplicate_translate', 'options_page_html');
 }
 
+/**
+ * Initialize the settings.
+ */
 function settings_init() {
+    // --- REGISTER SETTINGS ---
     register_setting( 'options_group', 'openai_api_key' );
     register_setting( 'options_group', 'gemini_api_key' );
     register_setting( 'options_group', 'claude_api_key' );
@@ -26,8 +41,10 @@ function settings_init() {
     register_setting( 'options_group', 'target_language', ['default' => 'French'] );
     register_setting( 'options_group', 'dt_debug_mode' );
 
+    // --- ADD SETTINGS SECTIONS ---
     add_settings_section('settings_section', __('API Configuration', 'duplicate-translate'), null, 'options_group');
     
+    // --- ADD SETTINGS FIELDS ---
     add_settings_field('provider_selection_field', __('Select LLM Provider', 'duplicate-translate'), 'provider_selection_field_html', 'options_group', 'settings_section');
     add_settings_field('api_key_fields', __('API Keys', 'duplicate-translate'), 'api_key_fields_html', 'options_group', 'settings_section');
     add_settings_field('model_selection_field', __('Select Model', 'duplicate-translate'), 'model_selection_field_html', 'options_group', 'settings_section');
@@ -35,6 +52,9 @@ function settings_init() {
     add_settings_field('debug_mode_field', __('Developer Mode', 'duplicate-translate'), 'debug_mode_field_html', 'options_group', 'settings_section');
 }
 
+/**
+ * HTML for the API key fields.
+ */
 function api_key_fields_html() {
     ?>
     <div id="openai-key-div">
@@ -56,6 +76,9 @@ function api_key_fields_html() {
     <?php
 }
 
+/**
+ * HTML for the provider selection field.
+ */
 function provider_selection_field_html() {
     $provider = get_option('llm_provider', 'openai');
     ?>
@@ -66,6 +89,9 @@ function provider_selection_field_html() {
     <?php
 }
 
+/**
+ * HTML for the model selection field.
+ */
 function model_selection_field_html() {
     $openai_model = get_option('openai_model', 'gpt-4o');
     $gemini_model = get_option('gemini_model', 'gemini-2.0-flash');
@@ -105,12 +131,18 @@ function model_selection_field_html() {
     <?php
 }
 
+/**
+ * HTML for the target language field.
+ */
 function target_language_field_html() {
     $target_language = get_option( 'target_language', 'French' );
     echo '<input type="text" name="target_language" value="' . esc_attr( $target_language ) . '" />';
     echo '<p class="description">' . __('Enter the language to translate content into.', 'duplicate-translate') . '</p>';
 }
 
+/**
+ * HTML for the debug mode field.
+ */
 function debug_mode_field_html() {
     $debug_mode = get_option( 'dt_debug_mode', 'off' );
     ?>
@@ -124,6 +156,9 @@ function debug_mode_field_html() {
     <?php
 }
 
+/**
+ * HTML for the options page.
+ */
 function options_page_html() {
     if (!current_user_can('manage_options')) return;
     ?>
@@ -144,6 +179,7 @@ function options_page_html() {
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- DOM ELEMENTS ---
         const providerRadios = document.querySelectorAll('input[name="llm_provider"]');
         const modelGroups = {
             openai: document.getElementById('openai-models'),
@@ -160,6 +196,9 @@ function options_page_html() {
         const chosenModelText = document.getElementById('chosen-model-text');
         const customModelInput = document.getElementById('custom_model');
 
+        /**
+         * Update the display of the chosen model.
+         */
         function updateChosenModelDisplay() {
             let selectedProvider = document.querySelector('input[name="llm_provider"]:checked').value;
             let chosenModel = '';
@@ -176,6 +215,9 @@ function options_page_html() {
             chosenModelText.textContent = chosenModel;
         }
 
+        /**
+         * Toggle the visibility of the model and API key fields based on the selected provider.
+         */
         function toggleVisibility() {
             let selectedProvider = document.querySelector('input[name="llm_provider"]:checked').value;
 
@@ -192,6 +234,7 @@ function options_page_html() {
             updateChosenModelDisplay();
         }
 
+        // --- EVENT LISTENERS ---
         providerRadios.forEach(radio => radio.addEventListener('change', toggleVisibility));
         
         const modelRadios = document.querySelectorAll('input[name$="_model"]');
