@@ -28,18 +28,48 @@ function add_admin_menu() {
  */
 function settings_init() {
     // --- REGISTER SETTINGS ---
-    register_setting( 'options_group', 'openai_api_key' );
-    register_setting( 'options_group', 'gemini_api_key' );
-    register_setting( 'options_group', 'claude_api_key' );
-    register_setting( 'options_group', 'deepseek_api_key' );
-    register_setting( 'options_group', 'llm_provider', ['default' => 'openai'] );
-    register_setting( 'options_group', 'openai_model', ['default' => 'gpt-4o'] );
-    register_setting( 'options_group', 'gemini_model', ['default' => 'gemini-1.5-pro-latest'] );
-    register_setting( 'options_group', 'claude_model', ['default' => 'claude-opus-4-20250514'] );
-    register_setting( 'options_group', 'deepseek_model', ['default' => 'deepseek-chat'] );
-    register_setting( 'options_group', 'custom_model' );
-    register_setting( 'options_group', 'target_language', ['default' => 'French'] );
-    register_setting( 'options_group', 'dt_debug_mode' );
+    register_setting( 'options_group', 'openai_api_key', 'sanitize_text_field' );
+    register_setting( 'options_group', 'gemini_api_key', 'sanitize_text_field' );
+    register_setting( 'options_group', 'claude_api_key', 'sanitize_text_field' );
+    register_setting( 'options_group', 'deepseek_api_key', 'sanitize_text_field' );
+    register_setting( 'options_group', 'llm_provider', 
+        array(
+            'default' => 'openai',
+            'sanitize_callback' => 'sanitize_llm_provider',
+        )
+    );
+    register_setting( 'options_group', 'openai_model', 
+        array(
+            'default' => 'gpt-4o',
+            'sanitize_callback' => 'sanitize_text_field',
+        )
+    );
+    register_setting( 'options_group', 'gemini_model', 
+        array(
+            'default' => 'gemini-1.5-pro-latest',
+            'sanitize_callback' => 'sanitize_text_field',
+        )
+    );
+    register_setting( 'options_group', 'claude_model', 
+        array(
+            'default' => 'claude-opus-4-20250514',
+            'sanitize_callback' => 'sanitize_text_field',
+        )
+    );
+    register_setting( 'options_group', 'deepseek_model',
+        array(
+            'default' => 'deepseek-chat',
+            'sanitize_callback' => 'sanitize_text_field',
+        )
+    );
+    register_setting( 'options_group', 'custom_model', 'sanitize_text_field' );
+    register_setting( 'options_group', 'target_language',
+        array(
+            'default' => 'French',
+            'sanitize_callback' => 'sanitize_text_field',
+        )
+    );
+    register_setting( 'options_group', 'dt_debug_mode', 'sanitize_debug_mode' );
 
     // --- ADD SETTINGS SECTIONS ---
     add_settings_section('settings_section', __('API Configuration', 'duplicate-translate'), null, 'options_group');
@@ -50,6 +80,30 @@ function settings_init() {
     add_settings_field('model_selection_field', __('Select Model', 'duplicate-translate'), 'model_selection_field_html', 'options_group', 'settings_section');
     add_settings_field('target_language_field', __('Target Language', 'duplicate-translate'), 'target_language_field_html', 'options_group', 'settings_section');
     add_settings_field('debug_mode_field', __('Developer Mode', 'duplicate-translate'), 'debug_mode_field_html', 'options_group', 'settings_section');
+}
+
+/**
+ * Sanitize the LLM provider input.
+ *
+ * @param string $input The input to sanitize.
+ * @return string The sanitized input.
+ */
+function sanitize_llm_provider( $input ) {
+    $allowed_providers = array( 'openai', 'gemini', 'claude', 'deepseek' );
+    if ( in_array( $input, $allowed_providers, true ) ) {
+        return $input;
+    }
+    return 'openai'; // Default value
+}
+
+/**
+ * Sanitize the debug mode input.
+ *
+ * @param string $input The input to sanitize.
+ * @return string The sanitized input.
+ */
+function sanitize_debug_mode( $input ) {
+    return 'on' === $input ? 'on' : 'off';
 }
 
 /**
