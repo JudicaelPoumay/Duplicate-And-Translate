@@ -58,7 +58,7 @@ function render_progress_page_callback() {
     if ( ! isset( $_GET['post_id'], $_GET['_wpnonce'] ) ||
          ! wp_verify_nonce( $_GET['_wpnonce'], 'render_progress_page_nonce_' . $_GET['post_id'] ) ||
          ! current_user_can( 'edit_posts' ) ) {
-        wp_die( 'Security check failed or insufficient permissions.' );
+        wp_die( 'Security check failed or insufficient permissions. Are you logged in? Try reloading the admin page.' );
     }
 
     dt_progress_page_assets();

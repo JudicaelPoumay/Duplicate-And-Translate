@@ -107,13 +107,8 @@ function model_selection_field_html() {
 
 function target_language_field_html() {
     $target_language = get_option( 'target_language', 'French' );
-    $languages = ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Japanese', 'Chinese (Simplified)'];
-    echo '<select name="target_language">';
-    foreach ($languages as $lang) {
-        echo '<option value="' . esc_attr($lang) . '" ' . selected($target_language, $lang, false) . '>' . esc_html($lang) . '</option>';
-    }
-    echo '</select>';
-    echo '<p class="description">' . __('Select the language to translate content into.', 'duplicate-translate') . '</p>';
+    echo '<input type="text" name="target_language" value="' . esc_attr( $target_language ) . '" />';
+    echo '<p class="description">' . __('Enter the language to translate content into.', 'duplicate-translate') . '</p>';
 }
 
 function debug_mode_field_html() {

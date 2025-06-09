@@ -18,20 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 </head>
 <body>
 	<h1><?php _e('Translation Progress', 'duplicate-translate'); ?> <span id="spinner" class="spinner" style="display:none;"></span></h1>
-	
+	<p><?php _e('Do not close this tab until the translation is complete.', 'duplicate-translate'); ?></p>
 	<div id="translation-form" class="translation-form">
 		<h2><?php _e('Translation Settings', 'duplicate-translate'); ?></h2>
 		<div class="form-group">
 			<label for="target-language"><?php _e('Target Language:', 'duplicate-translate'); ?></label>
-			<select id="target-language" name="target-language">
-				<?php
-				$languages = ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Japanese', 'Chinese (Simplified)'];
-				$current_language = get_option('target_language', 'French');
-				foreach ($languages as $lang) {
-					echo '<option value="' . esc_attr($lang) . '" ' . selected($current_language, $lang, false) . '>' . esc_html($lang) . '</option>';
-				}
-				?>
-			</select>
+			<input type="text" id="target-language" name="target-language" value="<?php echo esc_attr(get_option('target_language', 'French')); ?>" />
 		</div>
 		<div class="form-group">
 			<label for="translation-context"><?php _e('Translation Context (optional):', 'duplicate-translate'); ?></label>

@@ -32,8 +32,8 @@ msgstr "Sélectionnez le modèle"
 msgid "Target Language"
 msgstr "Langue cible"
 
-msgid "Select the language to translate content into."
-msgstr "Sélectionnez la langue dans laquelle traduire le contenu."
+msgid "Enter the language to translate content into."
+msgstr "Entrez la langue dans laquelle traduire le contenu."
 
 msgid "Please select a target language."
 msgstr "Veuillez sélectionner une langue cible."
@@ -193,3 +193,6 @@ msgstr "Activer le mode développeur"
 
 msgid "This is for developer mode only. Some errors may appear but may not be indicative of bugs."
 msgstr "Ceci est uniquement pour le mode développeur. Certaines erreurs peuvent apparaître mais ne sont pas nécessairement indicatives de bugs."
+
+msgid "Do not close this tab until the translation is complete."
+msgstr "Ne fermez pas cet onglet jusqu'à ce que la traduction soit terminée."
