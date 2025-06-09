@@ -1,13 +1,28 @@
 <?php
 /**
- * Plugin Name: Duplicate & Translate
- * Description: Easily duplicate any post or page, then automatically translate it into your desired language while keeping its formatting using a configurable AI translation provider.
- * Version: 0.2
- * Author: Judicael Poumay
- * License: GPLv2 or later
- * Text Domain: duplicate-translate
+ * The plugin bootstrap file
  *
- * @package Duplicate-And-Translate
+ * This file is read by WordPress to generate the plugin information in the plugin
+ * admin area. This file also includes all of the dependencies used by the plugin,
+ * registers the activation and deactivation functions, and defines a function
+ * that starts the plugin.
+ *
+ * @link              https://github.com/JudicaelPoumay/Duplicate-And-Translate
+ * @since             1.0.0
+ * @package           Duplicate-And-Translate
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Duplicate & Translate
+ * Plugin URI:        https://github.com/JudicaelPoumay/Duplicate-And-Translate
+ * Description:       Easily duplicate any post or page, then automatically translate it into your desired language while keeping its formatting using a configurable AI translation provider.
+ * Version:           1.0.0
+ * Author:            Judicael Poumay
+ * Author URI:        https://github.com/JudicaelPoumay
+ * License:           GPLv2
+ * License URI:       https://github.com/JudicaelPoumay/Duplicate-And-Translate/blob/main/LICENSE
+ * Text Domain:       duplicate-translate
+ * Domain Path:       /languages
+ * Requires PHP:      7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
