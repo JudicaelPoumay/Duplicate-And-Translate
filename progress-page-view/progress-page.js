@@ -200,8 +200,8 @@ jQuery(document).ready(function($) {
 				spinner.hide();
 				if (response.success) {
 					addProgress(i18n.complete, 'success');
-					if(response.data.edit_link) {
-						finalLink.prepend('<p class="done"><a href="' + response.data.edit_link + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
+					if(response.data.edit_post_url) {
+						finalLink.prepend('<p class="done"><a href="' + response.data.edit_post_url + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
 					}
 					addProgress(i18n.canClose);
 				} else {
