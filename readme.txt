@@ -2,8 +2,8 @@
 Contributors: judicaelpoumay
 Donate link: https://buymeacoffee.com/jpoumay
 Tags: duplicate, translate, openai, gutenberg, translation
-Requires at least: 3.0.1
-Tested up to: 6.8
+Requires at least: 6.2
+Tested up to: 6.5
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2
@@ -81,3 +81,15 @@ This plugin is developed by Judicael Poumay.
 *   [LinkedIn](https://www.linkedin.com/in/judicael-poumay/)
 *   [Website](https://thethoughtprocess.xyz/)
 *   [Email](mailto:pro.judicael.poumay@gmail.com) 
+
+== Third-Party Services ==
+
+This plugin utilizes third-party AI services to perform translations. When you initiate a translation, the content of your post (text from blocks, title, and alt tags) is sent to the AI provider you have configured in the settings.
+
+*   **Providers:** OpenAI, Google (Gemini), Anthropic (Claude), DeepSeek.
+*   **Data Sent:** The text content of the post being translated and the target language. No personal user data is sent.
+*   **Terms and Privacy:** You must have an account with the selected provider and provide your own API key. Use of these services is subject to their respective terms and privacy policies.
+    *   [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy)
+    *   [Google AI Privacy Policy](https://policies.google.com/privacy)
+    *   [Anthropic Privacy Policy](https://www.anthropic.com/privacy)
+    *   [DeepSeek Privacy Policy](https://www.deepseek.com/en/privacy) 

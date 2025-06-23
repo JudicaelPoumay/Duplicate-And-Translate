@@ -20,6 +20,8 @@
  * Author URI:        https://github.com/JudicaelPoumay
  * License:           GPLv2
  * License URI:       https://github.com/JudicaelPoumay/Duplicate-And-Translate/blob/main/LICENSE
+ * Requires at least: 6.2
+ * Tested up to:      6.5
  * Text Domain:       duplicate-translate
  * Domain Path:       /languages
  * Requires PHP:      7.4
@@ -30,23 +32,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // --- CONSTANTS ---
-define( 'PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'DUPLAMTR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'DUPLAMTR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // --- INCLUDES ---
-require PLUGIN_DIR . 'includes/admin-menu.php';
-require PLUGIN_DIR . 'includes/post-buttons.php';
-require PLUGIN_DIR . 'includes/progress-page.php';
-require PLUGIN_DIR . 'includes/translation.php';
+require DUPLAMTR_PLUGIN_DIR . 'includes/admin-menu.php';
+require DUPLAMTR_PLUGIN_DIR . 'includes/post-buttons.php';
+require DUPLAMTR_PLUGIN_DIR . 'includes/progress-page.php';
+require DUPLAMTR_PLUGIN_DIR . 'includes/translation.php';
 
 // --- HOOKS ---
-add_action( 'plugins_loaded', 'duplicate_translate_load_textdomain' );
+add_action( 'plugins_loaded', 'duplamtr_load_textdomain' );
 
 /**
  * Load the plugin text domain for translation.
  */
-function duplicate_translate_load_textdomain() {
+function duplamtr_load_textdomain() {
     load_plugin_textdomain( 'duplicate-translate', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 }
-
-?>

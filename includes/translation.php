@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param WP_Post $post_to_duplicate The post object to duplicate.
  * @return int|WP_Error The new post ID on success, or a WP_Error object on failure.
  */
-function duplicate_post( $post_to_duplicate ) {
+function duplamtr_duplicate_post( $post_to_duplicate ) {
     if ( ! $post_to_duplicate || ! is_object( $post_to_duplicate ) ) return new WP_Error( 'invalid_post', 'Invalid post object.' );
 
     // --- PREPARE NEW POST DATA ---
@@ -67,12 +67,12 @@ function duplicate_post( $post_to_duplicate ) {
  * @param string $translation_context Additional context for the translation.
  * @return string|WP_Error The translated text on success, or a WP_Error object on failure.
  */
-function translate_text( $text_to_translate, $target_language, $context = "general text", $translation_context = '' ) {
+function duplamtr_translate_text( $text_to_translate, $target_language, $context = "general text", $translation_context = '' ) {
     if ( empty( trim( $text_to_translate ) ) ) return '';
 
     // --- GET PROVIDER AND MODEL ---
-    $provider = get_option('llm_provider', 'openai');
-    $custom_model = get_option('custom_model');
+    $provider = get_option('duplamtr_llm_provider', 'openai');
+    $custom_model = get_option('duplamtr_custom_model');
     
     // --- PREPARE API REQUEST ---
     $model = '';
@@ -82,8 +82,8 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
 
     switch ($provider) {
         case 'gemini':
-            $model = !empty($custom_model) ? $custom_model : get_option('gemini_model', 'gemini-1.5-pro-latest');
-            $api_key = get_option('gemini_api_key');
+            $model = !empty($custom_model) ? $custom_model : get_option('duplamtr_gemini_model', 'gemini-1.5-pro-latest');
+            $api_key = get_option('duplamtr_gemini_api_key');
             $api_url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$api_key}";
             $headers = ['Content-Type'  => 'application/json'];
             $body = [
@@ -95,8 +95,8 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
             ];
             break;
         case 'claude':
-            $model = !empty($custom_model) ? $custom_model : get_option('claude_model', 'claude-3-opus-20240229');
-            $api_key = get_option('claude_api_key');
+            $model = !empty($custom_model) ? $custom_model : get_option('duplamtr_claude_model', 'claude-3-opus-20240229');
+            $api_key = get_option('duplamtr_claude_api_key');
             $api_url = 'https://api.anthropic.com/v1/messages';
             $headers = [
                 'x-api-key' => $api_key,
@@ -114,8 +114,8 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
             ];
             break;
         case 'deepseek':
-            $model = !empty($custom_model) ? $custom_model : get_option('deepseek_model', 'deepseek-chat');
-            $api_key = get_option('deepseek_api_key');
+            $model = !empty($custom_model) ? $custom_model : get_option('duplamtr_deepseek_model', 'deepseek-chat');
+            $api_key = get_option('duplamtr_deepseek_api_key');
             $api_url = 'https://api.deepseek.com/v1/chat/completions';
             $headers = ['Authorization' => 'Bearer ' . $api_key, 'Content-Type'  => 'application/json'];
             $body = [
@@ -129,8 +129,8 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
             break;
         case 'openai':
         default:
-            $model = !empty($custom_model) ? $custom_model : get_option('openai_model', 'gpt-4o');
-            $api_key = get_option('openai_api_key');
+            $model = !empty($custom_model) ? $custom_model : get_option('duplamtr_openai_model', 'gpt-4o');
+            $api_key = get_option('duplamtr_openai_api_key');
             $api_url = 'https://api.openai.com/v1/chat/completions';
             $headers = ['Authorization' => 'Bearer ' . $api_key, 'Content-Type'  => 'application/json'];
             $system_prompt = "You are a professional translator. Translate accurately to {$target_language} and maintain original HTML formatting if any. Only return the translated text.";
@@ -207,7 +207,7 @@ function translate_text( $text_to_translate, $target_language, $context = "gener
  * @param string $translation_context Additional context for the translation.
  * @return array|WP_Error The translated block on success, or a WP_Error object on failure.
  */
-function translate_block_recursive_for_ajax( $block, $target_language, $depth = 0, $translation_context = '' ) {
+function duplamtr_translate_block_recursive_for_ajax( $block, $target_language, $depth = 0, $translation_context = '' ) {
 	if(empty( $block['innerHTML'] ))
 		return $block;
 	
@@ -217,7 +217,7 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
     if ( ! empty( $block['innerBlocks'] ) ) {
         $translated_inner_blocks = [];
         foreach ( $block['innerBlocks'] as $inner_block ) {
-            $translated_inner_block_result = translate_block_recursive_for_ajax( $inner_block, $target_language, $depth + 1, $translation_context );
+            $translated_inner_block_result = duplamtr_translate_block_recursive_for_ajax( $inner_block, $target_language, $depth + 1, $translation_context );
             if (is_wp_error($translated_inner_block_result)) return $translated_inner_block_result; // Propagate error
             $translated_inner_blocks[] = $translated_inner_block_result;
         }
@@ -233,7 +233,7 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
         foreach ( $text_attributes_to_translate[$block['blockName']] as $attr_key ) {
             if ( ! empty( $translated_block['attrs'][ $attr_key ] ) ) {
                 $original_text = $translated_block['attrs'][ $attr_key ];
-                $translated_text = translate_text( $original_text, $target_language, "block attribute: {$block['blockName']}/{$attr_key}", $translation_context );
+                $translated_text = duplamtr_translate_text( $original_text, $target_language, "block attribute: {$block['blockName']}/{$attr_key}", $translation_context );
                 if ( is_wp_error( $translated_text ) ) return $translated_text;
                 $translated_block['attrs'][ $attr_key ] = $translated_text;
             }
@@ -245,7 +245,7 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
         $blocks_with_direct_content = ['core/paragraph', 'core/heading', 'core/list-item', 'core/html', 'core/quote']; // Classic editor content also uses innerContent for 'core/html'
         if(in_array($block['blockName'], $blocks_with_direct_content) || ($block['blockName'] === 'core/html' && $depth === 0) || strpos($block['blockName'], 'core/') === 0 ) { // Be more generous for core blocks or top-level HTML
             $original_content = $block['innerContent'][0];
-            $translated_content = translate_text( $original_content, $target_language, "content for block: {$block['blockName']}", $translation_context );
+            $translated_content = duplamtr_translate_text( $original_content, $target_language, "content for block: {$block['blockName']}", $translation_context );
             if ( is_wp_error( $translated_content ) ) return $translated_content;
             $translated_block['innerContent'][0] = $translated_content;
         }
@@ -254,7 +254,7 @@ function translate_block_recursive_for_ajax( $block, $target_language, $depth = 
     // --- TRANSLATE IMAGE ALT TEXT ---
     if ( isset($block['blockName']) && $block['blockName'] === 'core/image' ) {
         if ( ! empty( $translated_block['attrs']['alt'] ) ) {
-            $translated_alt = translate_text( $translated_block['attrs']['alt'], $target_language, 'image alt text', $translation_context );
+            $translated_alt = duplamtr_translate_text( $translated_block['attrs']['alt'], $target_language, 'image alt text', $translation_context );
             if ( is_wp_error( $translated_alt ) ) return $translated_alt;
             $translated_block['attrs']['alt'] = $translated_alt;
         }

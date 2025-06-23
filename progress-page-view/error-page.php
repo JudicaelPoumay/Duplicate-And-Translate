@@ -19,12 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title><?php _e('Configuration Error', 'duplicate-translate'); ?></title>
-    <?php 
-        wp_print_styles('dt-progress-page-style');
-    ?>
+	<title><?php esc_html_e('Configuration Error', 'duplicate-translate'); ?></title>
+    <?php wp_head(); ?>
 </head>
 <body>
-	<h1>Duplicate and Translate : Please define the LLM and API key in the plugin settings</h1>
+	<h1><?php esc_html_e('Duplicate and Translate: Please define the LLM provider and API key in the plugin settings.', 'duplicate-translate'); ?></h1>
+    <?php wp_footer(); ?>
 </body>
 </html>

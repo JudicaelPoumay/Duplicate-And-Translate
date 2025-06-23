@@ -78,7 +78,7 @@ jQuery(document).ready(function($) {
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
-				action: 'initiate_job',
+				action: 'duplamtr_initiate_job',
 				original_post_id: originalPostId,
 				target_language: targetLanguage,
 				translation_context: translationContext,
@@ -143,7 +143,7 @@ jQuery(document).ready(function($) {
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
-				action: 'process_block_translation',
+				action: 'duplamtr_process_block_translation',
 				job_id: jobId,
 				block_meta_index: blockMetaIndex,
 				_ajax_nonce: ajaxnonce
@@ -190,9 +190,8 @@ jQuery(document).ready(function($) {
 		$.ajax({
 			url: ajaxurl, type: 'POST', dataType: 'json',
 			data: {
-				action: 'finalize_job',
+				action: 'duplamtr_finalize_job',
 				job_id: jobId,
-				new_post_id: newPostId,
 				translated_blocks_serialized: finalBlockArray, // Array of serialized block strings
 				_ajax_nonce: ajaxnonce
 			},
@@ -200,8 +199,8 @@ jQuery(document).ready(function($) {
 				spinner.hide();
 				if (response.success) {
 					addProgress(i18n.complete, 'success');
-					if(response.data.edit_post_url) {
-						finalLink.prepend('<p class="done"><a href="' + response.data.edit_post_url + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
+					if(response.data.edit_url) {
+						finalLink.prepend('<p class="done"><a href="' + response.data.edit_url + '" target="_blank">' + i18n.editPost + ' (ID: ' + newPostId + ')</a></p>');
 					}
 					addProgress(i18n.canClose);
 				} else {
