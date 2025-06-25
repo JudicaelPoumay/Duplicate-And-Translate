@@ -31,6 +31,7 @@ function duplamtr_add_duplicate_translate_row_action( $actions, $post ) {
         $actions['duplicate_translate'] = sprintf(
             '<a href="%s" target="_blank" aria-label="%s">%s</a>',
             esc_url( $url ),
+            // translators: %s: post title
             esc_attr( sprintf( __( 'Duplicate & Translate "%s"', 'duplicate-translate' ), get_the_title( $post->ID ) ) ),
             esc_html__( 'Duplicate & Translate', 'duplicate-translate' )
         );

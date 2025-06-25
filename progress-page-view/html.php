@@ -47,7 +47,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         $debug_mode = get_option( 'duplamtr_dt_debug_mode' );
         $style = ( $debug_mode === 'on' ) ? '' : 'style="display:none;"';
         ?>
-		<div id="progress-log" class="progress-log" <?php echo $style; ?>></div>
+		<div id="progress-log" class="progress-log" <?php echo esc_attr( $style ); ?>></div>
 		<progress id="block-progress-bar" value="0" max="1" style="width: 100%;"></progress>
 		<div id="block-progress-info" class="block-progress"></div>
 		<div id="final-link"></div>

@@ -7,9 +7,17 @@
  * @package Duplicate-And-Translate
  */
 
-const { ajaxurl, ajaxnonce, originalPostId, i18n, parallelBatchSize } = progressPageData;
-
 jQuery(document).ready(function($) {
+	const progressBar = $('#duplamtr-progress-bar');
+	const progressText = $('#duplamtr-progress-text');
+	const logContainer = $('#duplamtr-log-container');
+	const finalActions = $('#duplamtr-final-actions');
+
+	const { ajaxurl, ajaxnonce, originalPostId, i18n, parallelBatchSize } = duplamtrProgressPageData;
+
+	let allBlocks = [];
+	let translatedBlocks = [];
+
 	var progressLog = $('#progress-log');
 	var finalLink = $('#final-link');
 	var spinner = $('#spinner');
@@ -43,7 +51,8 @@ jQuery(document).ready(function($) {
 	 */
 	function updateBlockProgress() {
 		$('#block-progress-bar').val(processedBlockCount/totalBlocks);
-		blockProgressInfo.text(i18n.blocksTranslated.replace('%d1', processedBlockCount).replace('%d2', totalBlocks) + ' ' + i18n.activeAPI.replace('%d', activeRequests));
+		var progressMessage = i18n.blocksTranslated.replace('%1$d', processedBlockCount).replace('%2$d', totalBlocks);
+		blockProgressInfo.text(progressMessage + ' ' + i18n.activeAPI.replace('%d', activeRequests));
 	}
 
 	// --- EVENT HANDLERS ---

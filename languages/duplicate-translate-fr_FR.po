@@ -62,8 +62,8 @@ msgstr "Voir l'article traduit"
 msgid "You can now close this tab."
 msgstr "Vous pouvez maintenant fermer cet onglet."
 
-msgid "Translated %d1 of %d2 blocks."
-msgstr "Traduit %d1 sur %d2 blocs."
+msgid "Translated %1$d of %2$d blocks."
+msgstr "Traduit %1$d sur %2$d blocs."
 
 msgid "Active API calls: %d"
 msgstr "Appels API actifs: %d"

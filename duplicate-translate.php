@@ -40,13 +40,3 @@ require DUPLAMTR_PLUGIN_DIR . 'includes/admin-menu.php';
 require DUPLAMTR_PLUGIN_DIR . 'includes/post-buttons.php';
 require DUPLAMTR_PLUGIN_DIR . 'includes/progress-page.php';
 require DUPLAMTR_PLUGIN_DIR . 'includes/translation.php';
-
-// --- HOOKS ---
-add_action( 'plugins_loaded', 'duplamtr_load_textdomain' );
-
-/**
- * Load the plugin text domain for translation.
- */
-function duplamtr_load_textdomain() {
-    load_plugin_textdomain( 'duplicate-translate', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-}

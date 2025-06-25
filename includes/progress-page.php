@@ -20,18 +20,26 @@ add_action( 'wp_ajax_duplamtr_finalize_job', 'duplamtr_finalize_job_callback' );
 
 /**
  * Enqueue scripts and styles for the progress page.
+ *
+ * @param int $post_id The ID of the post being translated.
  */
-function duplamtr_progress_page_assets() {
+function duplamtr_progress_page_assets( $post_id ) {
     // Enqueue Style
     wp_enqueue_style(
         'duplamtr-progress-page-style',
         DUPLAMTR_PLUGIN_URL . 'progress-page-view/progress-page.css',
         [],
-        '1.0.0'
+        filemtime( DUPLAMTR_PLUGIN_DIR . 'progress-page-view/progress-page.css' )
     );
     wp_enqueue_style(
         'duplamtr-donation-button-style',
         DUPLAMTR_PLUGIN_URL . 'assets/donation-button.css',
+        [],
+        filemtime( DUPLAMTR_PLUGIN_DIR . 'assets/donation-button.css' )
+    );
+    wp_enqueue_style(
+        'duplamtr-google-fonts-cookie',
+        'https://fonts.googleapis.com/css?display=swap&family=Cookie',
         [],
         '1.0.0'
     );
@@ -41,7 +49,7 @@ function duplamtr_progress_page_assets() {
         'duplamtr-progress-page-script',
         DUPLAMTR_PLUGIN_URL . 'progress-page-view/progress-page.js',
         ['jquery'],
-        '1.0.0',
+        filemtime( DUPLAMTR_PLUGIN_DIR . 'progress-page-view/progress-page.js' ),
         true
     );
 
@@ -49,7 +57,7 @@ function duplamtr_progress_page_assets() {
     $translation_array = [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'ajaxnonce' => wp_create_nonce('duplamtr_ajax_nonce'),
-        'originalPostId' => isset($_GET['post_id']) ? intval($_GET['post_id']) : 0,
+        'originalPostId' => $post_id,
         'parallelBatchSize' => 6,
         'i18n' => [
             'selectLanguage' => esc_html__('Please select a target language.', 'duplicate-translate'),
@@ -61,30 +69,36 @@ function duplamtr_progress_page_assets() {
             'complete' => esc_html__('Translation process complete!', 'duplicate-translate'),
             'editPost' => esc_html__('See Translated Post', 'duplicate-translate'),
             'canClose' => esc_html__('You can now close this tab.', 'duplicate-translate'),
+            // translators: %1$d: number of translated blocks, %2$d: total number of blocks.
             'blocksTranslated' => esc_html__('Translated %1$d of %2$d blocks.', 'duplicate-translate'),
+            // translators: %d: number of active API calls.
             'activeAPI' => esc_html__('Active API calls: %d', 'duplicate-translate'),
+            // translators: %d: block number.
             'blockTranslated' => esc_html__('Block %d translated.', 'duplicate-translate'),
+            // translators: %d: block number.
             'errorTranslatingBlock' => esc_html__('Error translating block %d: ', 'duplicate-translate'),
+            // translators: %d: block number.
             'ajaxErrorTranslatingBlock' => esc_html__('AJAX Error translating block %d: ', 'duplicate-translate'),
             'missingBlocksWarning' => esc_html__('Warning: Some blocks might be missing due to critical errors. Proceeding with available blocks.', 'duplicate-translate')
         ]
     ];
-    wp_localize_script('duplamtr-progress-page-script', 'progressPageData', $translation_array);
+    wp_localize_script('duplamtr-progress-page-script', 'duplamtrProgressPageData', $translation_array);
 }
 
 /**
  * Render the initial progress page.
  */
 function duplamtr_render_progress_page_callback() {
+    $post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0;
     // --- SECURITY CHECK ---
     if ( ! isset( $_GET['post_id'], $_GET['_wpnonce'] ) ||
-         ! wp_verify_nonce( $_GET['_wpnonce'], 'duplamtr_render_progress_page_nonce_' . $_GET['post_id'] ) ||
+         ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'duplamtr_render_progress_page_nonce_' . $post_id ) ||
          ! current_user_can( 'edit_posts' ) ) {
         wp_die( esc_html__( 'Security check failed or insufficient permissions. Are you logged in? Try reloading the admin page.', 'duplicate-translate' ) );
     }
 
     // --- ENQUEUE ASSETS ---
-    duplamtr_progress_page_assets();
+    duplamtr_progress_page_assets( $post_id );
 
     // --- CHECK CONFIGURATION ---
     $provider = get_option('duplamtr_llm_provider', 'openai');
@@ -121,8 +135,8 @@ function duplamtr_initiate_job_callback() {
 
     $provider = get_option('duplamtr_llm_provider', 'openai');
     $api_key = get_option("duplamtr_{$provider}_api_key");
-    $target_language = isset( $_POST['target_language'] ) ? sanitize_text_field( $_POST['target_language'] ) : get_option( 'duplamtr_target_language', 'French' );
-    $translation_context = isset( $_POST['translation_context'] ) ? sanitize_textarea_field( $_POST['translation_context'] ) : '';
+    $target_language = isset( $_POST['target_language'] ) ? sanitize_text_field( wp_unslash( $_POST['target_language'] ) ) : get_option( 'duplamtr_target_language', 'French' );
+    $translation_context = isset( $_POST['translation_context'] ) ? sanitize_textarea_field( wp_unslash( $_POST['translation_context'] ) ) : '';
 
     if ( empty( $api_key ) || empty( $target_language ) ) {
         wp_send_json_error( ['message' => esc_html__('API Key or Target Language not set.', 'duplicate-translate')] );
@@ -138,9 +152,6 @@ function duplamtr_initiate_job_callback() {
         $translated_title = duplamtr_translate_text( $original_post->post_title, $target_language, 'post title', $translation_context );
         if ( ! is_wp_error( $translated_title ) && !empty($translated_title) ) {
             $translated_title_text = $translated_title;
-        } else if (is_wp_error($translated_title)) {
-            error_log('Duplicate & Translate : Title Translation Error: ' . $translated_title->get_error_message());
-            // Use fallback title
         }
         wp_update_post( ['ID' => $new_post_id, 'post_title' => $translated_title_text, 'post_name' => sanitize_title( $translated_title_text ), 'post_status' => 'draft'] );
 
@@ -186,7 +197,8 @@ function duplamtr_initiate_job_callback() {
         }, $blocks_meta);
 
         wp_send_json_success([
-            'message'     => sprintf(esc_html__('Job initiated. New post ID: %d. Title translated. %d blocks parsed.', 'duplicate-translate'), $new_post_id, count($blocks_meta)),
+            // translators: %1$d: new post ID, %2$d: number of blocks parsed.
+            'message'     => sprintf(esc_html__('Job initiated. New post ID: %1$d. Title translated. %2$d blocks parsed.', 'duplicate-translate'), $new_post_id, count($blocks_meta)),
             'job_id'      => $job_id,
             'new_post_id' => $new_post_id,
             'blocks_meta' => $client_blocks_meta // Meta for client to iterate
@@ -231,7 +243,6 @@ function duplamtr_process_block_translation_callback() {
 
     if ( is_wp_error( $translated_block_array ) ) {
         // --- HANDLE TRANSLATION ERROR ---
-        error_log('Duplicate & Translate : Block Translation Error (Job: '.$job_id.', Block Index: '.$block_meta_index.'): ' . $translated_block_array->get_error_message());
         wp_send_json_error( [
             'message' => $translated_block_array->get_error_message(),
             'block_name' => $block_to_translate_raw['blockName'] ?: 'unknown',
@@ -258,9 +269,18 @@ function duplamtr_finalize_job_callback() {
 
     // --- VALIDATE INPUT ---
     $job_id = isset( $_POST['job_id'] ) ? sanitize_key( $_POST['job_id'] ) : null;
-    $translated_blocks_serialized = isset( $_POST['translated_blocks_serialized'] ) && is_array($_POST['translated_blocks_serialized']) 
-                                    ? wp_unslash( $_POST['translated_blocks_serialized'] ) 
-                                    : [];
+    $translated_blocks_serialized = [];
+	if ( isset( $_POST['translated_blocks_serialized'] ) && is_array( $_POST['translated_blocks_serialized'] ) ) {
+		// To sanitize, we parse the serialized blocks, which validates their structure,
+		// and then re-serialize them. This ensures the content is valid block grammar.
+		$unslashed_blocks = wp_unslash( $_POST['translated_blocks_serialized'] );
+		foreach ( $unslashed_blocks as $serialized_block ) {
+			$parsed_blocks = parse_blocks( $serialized_block );
+			if ( ! empty( $parsed_blocks ) && isset( $parsed_blocks[0]['blockName'] ) ) {
+				$translated_blocks_serialized[] = serialize_block( $parsed_blocks[0] );
+			}
+		}
+	}
 
     if ( ! $job_id || ! is_array( $translated_blocks_serialized ) ) {
         wp_send_json_error( ['message' => esc_html__('Job ID or Translated Blocks missing/invalid.', 'duplicate-translate')] );
@@ -291,6 +311,7 @@ function duplamtr_finalize_job_callback() {
     // --- SEND RESPONSE ---
     wp_send_json_success( [
         'message' => sprintf(
+            // translators: %1$d: number of translated blocks, %2$d: total number of blocks.
             esc_html__( 'Post updated successfully. Translated %1$d of %2$d blocks.', 'duplicate-translate' ),
             count( $translated_blocks_serialized ),
             count( $job_data['blocks_meta_full'] )

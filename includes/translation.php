@@ -260,6 +260,5 @@ function duplamtr_translate_block_recursive_for_ajax( $block, $target_language, 
         }
     }
 
-    error_log(print_r($translated_block, true));
     return $translated_block;
 }

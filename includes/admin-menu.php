@@ -28,8 +28,9 @@ function duplamtr_add_admin_menu() {
  * Enqueue scripts for the admin page.
  */
 function duplamtr_admin_enqueue_scripts() {
-    wp_enqueue_style( 'duplamtr-donation-button', DUPLAMTR_PLUGIN_URL . 'assets/donation-button.css', array(), '1.0.0' );
-    wp_enqueue_script( 'duplamtr-admin-js', DUPLAMTR_PLUGIN_URL . 'assets/admin-settings.js', array(), '1.0.0', true );
+    wp_enqueue_style( 'duplamtr-donation-button', DUPLAMTR_PLUGIN_URL . 'assets/donation-button.css', array(), filemtime( DUPLAMTR_PLUGIN_DIR . 'assets/donation-button.css' ) );
+    wp_enqueue_style( 'duplamtr-google-fonts-cookie', 'https://fonts.googleapis.com/css?display=swap&family=Cookie', array(), '1.0.0' );
+    wp_enqueue_script( 'duplamtr-admin-js', DUPLAMTR_PLUGIN_URL . 'assets/admin-settings.js', array(), filemtime( DUPLAMTR_PLUGIN_DIR . 'assets/admin-settings.js' ), true );
     $translation_array = array(
         'chosen_model' => esc_html__( 'You have chosen model:', 'duplicate-translate' )
     );
