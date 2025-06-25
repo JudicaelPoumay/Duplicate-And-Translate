@@ -21,7 +21,7 @@
  * License:           GPLv2
  * License URI:       https://github.com/JudicaelPoumay/Duplicate-And-Translate/blob/main/LICENSE
  * Requires at least: 6.2
- * Tested up to:      6.5
+ * Tested up to:      6.8
  * Text Domain:       duplicate-translate
  * Domain Path:       /languages
  * Requires PHP:      7.4

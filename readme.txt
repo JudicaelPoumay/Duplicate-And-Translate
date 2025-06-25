@@ -3,7 +3,7 @@ Contributors: judicaelpoumay
 Donate link: https://buymeacoffee.com/jpoumay
 Tags: duplicate, translate, openai, gutenberg, translation
 Requires at least: 6.2
-Tested up to: 6.5
+Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2
