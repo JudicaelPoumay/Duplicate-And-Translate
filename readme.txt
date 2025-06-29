@@ -5,7 +5,7 @@ Tags: duplicate, translate, openai, gutenberg, translation
 Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2
 License URI: https://github.com/JudicaelPoumay/Duplicate-And-Translate/blob/main/LICENSE
 
@@ -22,7 +22,8 @@ Duplicate & Translate is a WordPress plugin that allows you to easily duplicate 
 *   **Gutenberg Block Editor Support:** Translates content from various core Gutenberg blocks while keeping layout intact, including headings, paragraphs, lists, quotes, buttons, and images (alt text).
 *   **AI Integration:** Utilizes the power of language models for accurate translations.
 *   **Configurable Target Language:** Choose from a list of predefined languages to translate your content into.
-*   **Secure API Key Storage:** Your API key is stored securely in the WordPress database.
+*   **Configurable Context prompt** Add context via a text box to help create a better translation (useful for idioms and language specific elements that needs special translation)
+*   **Secure API Key Storage:** Your API key is stored securely in your WordPress database.
 *   **User-friendly Progress Page:** A real-time progress page keeps you informed about the translation process.
 
 == Installation ==
@@ -40,7 +41,8 @@ Duplicate & Translate is a WordPress plugin that allows you to easily duplicate 
 2.  Hover over the post you want to translate.
 3.  Click the **Duplicate & Translate** link.
 4.  A new tab will open, showing the translation progress.
-5.  Once the translation is complete, you will be given a link to edit the new translated post, which will be saved as a draft.
+5.  Choose Language and add context to help the translator
+6.  Once the translation is complete, you will be given a link to edit the new translated post, which will be saved as a draft.
 
 == Frequently Asked Questions ==
 
@@ -65,6 +67,9 @@ Yes, you can select a target language in the plugin's settings and the translati
 5. The translation page with a finalized translation and a button that leads to the translated post.
 
 == Changelog ==
+
+= 1.0.1 =
+* Updated Readme.txt
 
 = 1.0.0 =
 * Initial public release.
