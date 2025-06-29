@@ -83,7 +83,6 @@ function duplamtr_settings_init() {
             'sanitize_callback' => 'sanitize_text_field',
         )
     );
-    register_setting( 'duplamtr_options_group', 'duplamtr_dt_debug_mode', 'duplamtr_sanitize_debug_mode' );
 
     // --- ADD SETTINGS SECTIONS ---
     add_settings_section('duplamtr_settings_section', __('API Configuration', 'duplicate-translate'), null, 'duplamtr_options_group');
@@ -93,7 +92,6 @@ function duplamtr_settings_init() {
     add_settings_field('duplamtr_api_key_fields', __('API Keys', 'duplicate-translate'), 'duplamtr_api_key_fields_html', 'duplamtr_options_group', 'duplamtr_settings_section');
     add_settings_field('duplamtr_model_selection_field', __('Select Model', 'duplicate-translate'), 'duplamtr_model_selection_field_html', 'duplamtr_options_group', 'duplamtr_settings_section');
     add_settings_field('duplamtr_target_language_field', __('Target Language', 'duplicate-translate'), 'duplamtr_target_language_field_html', 'duplamtr_options_group', 'duplamtr_settings_section');
-    add_settings_field('duplamtr_debug_mode_field', __('Developer Mode', 'duplicate-translate'), 'duplamtr_debug_mode_field_html', 'duplamtr_options_group', 'duplamtr_settings_section');
 }
 
 /**
@@ -108,16 +106,6 @@ function duplamtr_sanitize_llm_provider( $input ) {
         return $input;
     }
     return 'openai'; // Default value
-}
-
-/**
- * Sanitize the debug mode input.
- *
- * @param string $input The input to sanitize.
- * @return string The sanitized input.
- */
-function duplamtr_sanitize_debug_mode( $input ) {
-    return 'on' === $input ? 'on' : 'off';
 }
 
 /**
@@ -205,22 +193,6 @@ function duplamtr_target_language_field_html() {
     $target_language = get_option( 'duplamtr_target_language', 'French' );
     echo '<input type="text" name="duplamtr_target_language" value="' . esc_attr( $target_language ) . '" />';
     echo '<p class="description">' . esc_html__('Enter the language to translate content into.', 'duplicate-translate') . '</p>';
-}
-
-/**
- * HTML for the debug mode field.
- */
-function duplamtr_debug_mode_field_html() {
-    $debug_mode = get_option( 'duplamtr_dt_debug_mode', 'off' );
-    ?>
-    <label>
-        <input type="checkbox" name="duplamtr_dt_debug_mode" value="on" <?php checked( $debug_mode, 'on' ); ?> />
-        <?php esc_html_e( 'Enable Developer Mode', 'duplicate-translate' ); ?>
-    </label>
-    <p class="description">
-        <?php esc_html_e( 'This is for developer mode only. Some errors may appear but may not be indicative of bugs.', 'duplicate-translate' ); ?>
-    </p>
-    <?php
 }
 
 /**
