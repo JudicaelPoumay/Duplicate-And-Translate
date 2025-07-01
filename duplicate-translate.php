@@ -8,14 +8,14 @@
  * that starts the plugin.
  *
  * @link              https://github.com/JudicaelPoumay/Duplicate-And-Translate
- * @since             1.0.2
+ * @since             1.0.3
  * @package           Duplicate-And-Translate
  *
  * @wordpress-plugin
  * Plugin Name:       Duplicate & Translate
  * Plugin URI:        https://github.com/JudicaelPoumay/Duplicate-And-Translate
  * Description:       Easily duplicate any post or page, then automatically translate it into your desired language while keeping its formatting using a configurable AI translation provider.
- * Version:           1.0.2
+ * Version:           1.0.3
  * Author:            Judicael Poumay
  * Author URI:        https://github.com/JudicaelPoumay
  * License:           GPLv2

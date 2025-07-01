@@ -5,7 +5,7 @@ Tags: duplicate, translate, openai, gutenberg, translation
 Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2
 License URI: https://github.com/JudicaelPoumay/Duplicate-And-Translate/blob/main/LICENSE
 
