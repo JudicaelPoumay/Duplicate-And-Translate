@@ -68,6 +68,9 @@ Yes, you can select a target language in the plugin's settings and the translati
 
 == Changelog ==
 
+= 1.0.2 =
+* Updated Readme.txt
+
 = 1.0.1 =
 * Updated Readme.txt
 

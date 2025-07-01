@@ -129,7 +129,7 @@ function duplamtr_initiate_job_callback() {
     if ( ! $original_post_id ) wp_send_json_error( ['message' => esc_html__('Original Post ID missing.', 'duplicate-translate')] );
 
     $original_post = get_post( $original_post_id );
-    if ( ! $original_post || $original_post->post_type !== 'post' || $original_post->post_status !== 'publish' ) {
+    if ( ! $original_post || $original_post->post_type !== 'post') {
         wp_send_json_error( ['message' => esc_html__('Invalid original post.', 'duplicate-translate')] );
     }
 
